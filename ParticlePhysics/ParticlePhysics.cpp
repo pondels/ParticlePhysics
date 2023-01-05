@@ -18,27 +18,39 @@ bool check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
     
     // Update Direction & Speed of particle based on collisions.
 
+    // Rate at which energy is lost
+    float restitution = .9f;
+
     sf::Vector2f windowsize(1280, 720);
 
+    float radius = shape->getGlobalBounds().height / 2;
+    float particlex = shape->getPosition().x;
+    float particley = shape->getPosition().y;
+
     // Colliding with the ground
-    if (shape->getPosition().y + (shape->getGlobalBounds().height / 2) >= windowsize.y) {
-        particle->velocity->y = -particle->velocity->y;
+    if (particley > windowsize.y - radius) {
+        particle->velocity->y = -abs(particle->velocity->y) * restitution;
+        particle->particle->setPosition(particlex, windowsize.y - radius);
     }
 
     // Colliding with the ceiling
-    else if (shape->getPosition().y - (shape->getGlobalBounds().height / 2) <= 0 && particle->velocity->y < 0) {
-        particle->velocity->y = -particle->velocity->y;
+    else if (particley < radius) {
+        particle->velocity->y = abs(particle->velocity->y) * restitution;
+        particle->particle->setPosition(particlex, radius);
     }
 
     // Colliding with the walls
-    else if (shape->getPosition().x - (shape->getGlobalBounds().height / 2) <= 0) {
-        particle->velocity->x = -particle->velocity->x;
+    else if (particlex < radius) {
+        particle->velocity->x = abs(particle->velocity->x) * restitution;
+        particle->particle->setPosition(radius, particley);
     }
-    else if (shape->getPosition().x + (shape->getGlobalBounds().height / 2) >= windowsize.x) {
-        particle->velocity->x = -particle->velocity->x;
+    else if (particlex > windowsize.x - radius) {
+        particle->velocity->x = -abs(particle->velocity->x) * restitution;
+        particle->particle->setPosition(windowsize.x - radius, particley);
     }
 
     bool overlap = false;
+
     // Colliding with other particles
     for (int i = 0; i < particles.size(); i++) {
         if (i != index) {
@@ -61,10 +73,9 @@ bool check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
                 sf::Vector2f vCollision(x2 - x1, y2 - y1);
                 float distance = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
                 sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
-                std::cout << v1->x << " : " << v2->x << std::endl;
                 sf::Vector2f vRelativeVelocity(v1->x - v2->x, v1->y - v2->y);
                 float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
-
+                speed *= restitution;
                 float impulse = 2 * speed / (m1 + m2);
 
                 particles.at(index)->velocity->x = impulse * m2 * vCollisionNorm.x;
@@ -108,12 +119,12 @@ int main()
     int particle_amount = 10;
 
     for (int i = 0; i < particle_amount; i++) {
-        float size = 10.f;
-        sf::Vector2f position(10 + 25 * i, 10 + 10 * i);
+        float size = 15.f;
+        sf::Vector2f position(10 + 45 * i, 50);
         sf::Color color(0, 0, 255);
         int grav_type = 1;
-        double mass = .5;
-        sf::Vector2f* velocity = new sf::Vector2f(.1 + i / 10, .1 + i / 10);
+        double mass = .1 + .1*i;
+        sf::Vector2f* velocity = new sf::Vector2f(.1, .1);
 
         Particle* particle = new Particle(size, position, color, grav_type, mass, velocity);
         particles.push_back(particle);
