@@ -80,6 +80,16 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
                 if (speed < 0) {
                     break;
                 }
+
+                float lapover = (distance - (particles.at(i)->particle->getGlobalBounds().width * 0.5) - (particle->particle->getGlobalBounds().width * 0.5)) / 2.f;
+
+                // If inside an orb, break out
+                float moveX = (lapover * (x1 - x2) / distance);
+                float moveY = (lapover * (y1 - y2) / distance);
+
+                particles.at(i)->particle->setPosition(x1 - moveX, y1 - moveY);
+                particle->particle->setPosition(x2 + moveX, y2 + moveY);
+
                 speed *= restitution;
                 float impulse = 2 * speed / (m1 + m2);
 
@@ -120,11 +130,12 @@ int main()
     std::vector<Particle*> particles;
 
     // Standard particle features
-    float size = 10.f;
-    double mass = 15.f;
+    float size = 5.f;
+    double mass = 150.f;
 
     double lastTime = clock();
     double deltaTime;
+    int particle_amount = 1;
 
     while (window.isOpen())
     {
@@ -144,21 +155,32 @@ int main()
                 if (event.key.code == sf::Keyboard::Add)
                 {
                     std::cout << particles.size() << std::endl;
+                    for (int i = 0; i < particles.size(); i++) {
+                        particles.at(i)->mass += 5.f;
+                        particles.at(i)->particle->setRadius(particles.at(i)->particle->getRadius() + 1.f);
+                    }
                     size += 1.f;
                     mass += 5.f;
                 }
                 else if (event.key.code == sf::Keyboard::Subtract) {
+                    for (int i = 0; i < particles.size(); i++) {
+                        particles.at(i)->mass -= 5.f;
+                        particles.at(i)->particle->setRadius(particles.at(i)->particle->getRadius() - 1.f);
+                    }
                     size -= 1.f;
                     mass -= 5.f;
-                    for (int i = 0; i < particles.size(); i++) {
-                        std::cout << particles.at(i)->velocity->x << " : " << particles.at(i)->velocity->y << std::endl;
-                    }
                 }
                 else if (event.key.code == sf::Keyboard::Delete) {
                     particles.clear();
                 }
+                else if (event.key.code == sf::Keyboard::Up) {
+                    particle_amount += 1;
+                }
+                else if (event.key.code == sf::Keyboard::Down) {
+                    particle_amount -= 1;
+                }
                 else {
-                    for (int i = 0; i < 25; i++) {
+                    for (int i = 0; i < particle_amount; i++) {
                         sf::Vector2f position(mouseX+30*i, mouseY);
                         sf::Color color(0, 0, 255);
                         int grav_type = 1;
