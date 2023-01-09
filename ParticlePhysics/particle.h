@@ -10,7 +10,6 @@ public:
 
 	sf::CircleShape* particle;
 	std::string type;
-	//double start_time;
 	double mass;
 	sf::Vector2f* velocity;
 
