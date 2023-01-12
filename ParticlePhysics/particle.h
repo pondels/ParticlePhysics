@@ -10,6 +10,7 @@ public:
 
 	sf::CircleShape* particle;
 	std::string type;
+	float radius;
 	double mass;
 	sf::Vector2f* velocity;
 

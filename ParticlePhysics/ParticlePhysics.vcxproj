@@ -156,6 +156,7 @@
     <ClCompile Include="physics.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="KDTree.h" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="physics.h" />
   </ItemGroup>
