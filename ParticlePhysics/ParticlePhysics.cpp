@@ -8,109 +8,24 @@
 
 *****SOURCES*****
 https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
-
 https://chat.openai.com/chat
 */
 
 sf::Vector2f windowsize(1280, 720);
 
-bool vertical_overlap(int y1, int y2, int r1, int r2) {
+float dot(sf::Vector2f a, sf::Vector2f b) {
+    return a.x * b.x + a.y * b.y;
+}
+bool vertical_overlap(float y1, float y2, float r1, float r2) {
     if (abs(y1 - y2) - (r1 + r2) < 0) return true;
     return false;
 }
-bool horizontal_overlap(int x1, int x2, int r1, int r2) {
+bool horizontal_overlap(float x1, float x2, float r1, float r2) {
     if (abs(x1 - x2) - (r1 + r2) < 0) return true;
     return false;
 }
-void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index) {
-
-    // Update Direction & Speed of particle based on collisions.
-
-    // Rate at which energy is lost against the wall/floor
-    float restitution = .9f;
-
-    float radius = shape->getGlobalBounds().height / 2;
-    float particlex = shape->getPosition().x;
-    float particley = shape->getPosition().y;
-
-    // Colliding with the walls
-    if (particlex < radius) {
-        particle->velocity->x *= -restitution;
-        particle->particle->setPosition(radius, particley);
-        particlex = radius;
-    }
-    else if (particlex > windowsize.x - radius) {
-        particle->velocity->x *= -restitution;
-        particle->particle->setPosition(windowsize.x - radius, particley);
-        particlex = windowsize.x - radius;
-    }
-
-    // Colliding with the ground
-    if (particley > windowsize.y - radius) {
-        particle->velocity->y *= -restitution;
-        particle->particle->setPosition(particlex, windowsize.y - radius);
-    }
-
-    // Colliding with the ceiling
-    else if (particley < radius) {
-        particle->velocity->y *= -restitution;
-        particle->particle->setPosition(particlex, radius);
-    }
-
-    // Colliding with other particles
-    for (int i = 0; i < particles.size(); i++) {
-        if (i != index) {
-            float x1 = particles[i]->particle->getPosition().x;
-            float y1 = particles[i]->particle->getPosition().y;
-            float r1 = particles[i]->radius;
-            double m1 = particles[i]->mass;
-            sf::Vector2f* v1 = particles[i]->velocity;
-
-            float x2 = shape->getPosition().x;
-            float y2 = shape->getPosition().y;
-            float r2 = particle->radius;
-            double m2 = particle->mass;
-            sf::Vector2f* v2 = particle->velocity;
-
-            bool ho = horizontal_overlap(x1, x2, r1, r2);
-            if (ho) {
-                bool vo = vertical_overlap(y1, y2, r1, r2);
-                if (vo) {
-                    float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-                    if (squaredistance <= ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
-                        float distance = sqrtf(squaredistance);
-                        float lapover = (distance - r1 - r2) / 2.f;
-
-                        // If inside a particle, break out
-                        float moveX = (lapover * (x1 - x2) / distance);
-                        float moveY = (lapover * (y1 - y2) / distance);
-
-                        particles[i]->particle->setPosition(x1 - moveX, y1 - moveY);
-                        particle->particle->setPosition(x2 + moveX, y2 + moveY);
-
-                        sf::Vector2f vCollision(x1 - x2, y1 - y2);
-                        sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
-                        sf::Vector2f vRelativeVelocity(v2->x - v1->x, v2->y - v1->y);
-                        float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
-                        if (speed < 0) {
-                            break;
-                        }
-
-                        speed *= restitution;
-                        //float impulse = 2 * speed / (m1 + m2);
-
-                        v1->x += speed * vCollisionNorm.x;
-                        v1->y += speed * vCollisionNorm.y;
-                        v2->x -= speed * vCollisionNorm.x;
-                        v2->y -= speed * vCollisionNorm.y;
-                    }
-                }
-            }
-        }
-    }
-}
 //void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index) {
-//    
+//
 //    // Update Direction & Speed of particle based on collisions.
 //
 //    // Rate at which energy is lost against the wall/floor
@@ -124,10 +39,12 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
 //    if (particlex < radius) {
 //        particle->velocity->x *= -restitution;
 //        particle->particle->setPosition(radius, particley);
+//        particlex = radius;
 //    }
 //    else if (particlex > windowsize.x - radius) {
 //        particle->velocity->x *= -restitution;
 //        particle->particle->setPosition(windowsize.x - radius, particley);
+//        particlex = windowsize.x - radius;
 //    }
 //
 //    // Colliding with the ground
@@ -162,20 +79,18 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
 //                bool vo = vertical_overlap(y1, y2, r1, r2);
 //                if (vo) {
 //                    float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-//                    if (squaredistance <= ((r1 + r2) * (r1 + r2))) {
+//                    if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
 //                        float distance = sqrtf(squaredistance);
-//                        float lapover = (distance - r1 - r2) / 2.f;
+//                        float overlap = (distance - r1 - r2) / 2.f;
 //
 //                        // If inside a particle, break out
-//                        float moveX = (lapover * (x1 - x2) / distance);
-//                        float moveY = (lapover * (y1 - y2) / distance);
+//                        float moveX = (overlap * (x1 - x2) / distance);
+//                        float moveY = (overlap * (y1 - y2) / distance);
 //
 //                        particles[i]->particle->setPosition(x1 - moveX, y1 - moveY);
 //                        particle->particle->setPosition(x2 + moveX, y2 + moveY);
 //
 //                        sf::Vector2f vCollision(x2 - x1, y2 - y1);
-//                        distance = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-//                        //distance = sqrt(squaredistance);
 //                        sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
 //                        sf::Vector2f vRelativeVelocity(v1->x - v2->x, v1->y - v2->y);
 //                        float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
@@ -184,7 +99,7 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
 //                        }
 //
 //                        speed *= restitution;
-//                        //float impulse = 2 * speed / (m1 + m2);
+//                        float impulse = float((2 * speed) / (m1 + m2));
 //
 //                        v1->x -= speed * vCollisionNorm.x;
 //                        v1->y -= speed * vCollisionNorm.y;
@@ -196,10 +111,87 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
 //        }
 //    }
 //}
-void update_position(Particle* particle, sf::CircleShape* shape, int index, double deltaTime) {
+void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index) {
+    
+    // Update Direction & Speed of particle based on collisions.
+
+    // Rate at which energy is lost against the wall/floor
+    float restitution = .9f;
+
+    float radius = shape->getGlobalBounds().height / 2;
+    float particlex = shape->getPosition().x;
+    float particley = shape->getPosition().y;
+
+    // Colliding with the walls
+    if (particlex < radius) {
+        particle->velocity->x *= -restitution;
+        particle->particle->setPosition(radius, particley);
+        particlex = radius;
+    }
+    else if (particlex > windowsize.x - radius) {
+        particle->velocity->x *= -restitution;
+        particle->particle->setPosition(windowsize.x - radius, particley);
+        particlex = windowsize.x - radius;
+    }
+
+    // Colliding with the ground
+    if (particley > windowsize.y - radius) {
+        particle->velocity->y *= -restitution;
+        particle->particle->setPosition(particlex, windowsize.y - radius);
+    }
+
+    // Colliding with the ceiling
+    else if (particley < radius) {
+        particle->velocity->y *= -restitution;
+        particle->particle->setPosition(particlex, radius);
+    }
+
+    for (int i = 0; i < particles.size(); i++) {
+        if (i != index) {
+            float x1 = particles[i]->particle->getPosition().x;
+            float y1 = particles[i]->particle->getPosition().y;
+            float r1 = particles[i]->radius;
+            double m1 = particles[i]->mass;
+            sf::Vector2f* v1 = particles[i]->velocity;
+
+            float x2 = shape->getPosition().x;
+            float y2 = shape->getPosition().y;
+            float r2 = particle->radius;
+            double m2 = particle->mass;
+            sf::Vector2f* v2 = particle->velocity;
+
+            // Check for collision
+            float distance = sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+            if (distance < r1 + r2 && distance != 0) {
+                // Calculate the collision normal
+                float overlap = (distance - r1 - r2) / 2.f;
+
+                // If inside a particle, break out
+                float moveX = (overlap * (x1 - x2) / distance);
+                float moveY = (overlap * (y1 - y2) / distance);
+                
+                particles[i]->particle->setPosition(x1 - moveX, y1 - moveY);
+                particle->particle->setPosition(x2 + moveX, y2 + moveY);
+
+                // Calculate the impulse scalar
+                sf::Vector2f normal((x2 - x1) / distance, (y2 - y1) / distance);
+                sf::Vector2f tangent(-normal.y, normal.x);
+
+                float dotProductTangent1 = v1->x * tangent.x + v1->y * tangent.y;
+                float dotProductTangent2 = v2->x * tangent.x + v2->y * tangent.y;
+
+                v1->x = tangent.x * dotProductTangent1;
+                v1->y = tangent.y * dotProductTangent1;
+                v2->x = tangent.x * dotProductTangent2;
+                v2->y = tangent.y * dotProductTangent2;
+            }
+        }
+    }
+}
+void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime) {
     
     // Move particle so far along the given path.
-    float gravity = 9.81;
+    float gravity = 9.81f / 6;
     float x = shape->getPosition().x;
     float y = shape->getPosition().y;
 
@@ -208,7 +200,7 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, doub
 
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void update_particle(std::vector<Particle*> particles, int index, double deltaTime) {
+void update_particle(std::vector<Particle*> particles, int index, float deltaTime) {
     update_position(particles[index], particles[index]->particle, index, deltaTime);
     check_collisions(particles, particles[index], particles[index]->particle, index);
 }
@@ -249,8 +241,9 @@ sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b
 }
 int main()
 {
+    int fps = 165;
     sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "SFML works!", sf::Style::Resize);
-    window.setFramerateLimit(165);
+    window.setFramerateLimit(fps);
  
     std::vector<Particle*> particles;
 
@@ -265,8 +258,7 @@ int main()
     float size = 5.f;
     double mass = 150.f;
 
-    double lastTime = clock();
-    double deltaTime = 0.00606061;
+    float deltaTime = 1.f/fps;
     int particle_amount = 1;
     int red = 255;
     int green = 0;
