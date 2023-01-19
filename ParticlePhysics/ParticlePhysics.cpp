@@ -251,10 +251,16 @@ sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b
     sf::Color color(r, g, b);
     return color;
 }
+float convert_x(float x) {
+    return (windowsize.x * x / 1920);
+}
+float convert_y(float x) {
+    return (windowsize.y * x / 1080);
+}
 sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
     sf::Vector2f res(1920, 1080);
-    float x = windowsize.x * coordinates.x / res.x;
-    float y = windowsize.y * coordinates.y / res.y;
+    float x = convert_x(coordinates.x);
+    float y = convert_y(coordinates.y);
     return sf::Vector2f(x, y);
 }
 sf::RectangleShape make_bar(sf::Vector2f size, sf::Color color, sf::Vector2f position) {
@@ -263,47 +269,95 @@ sf::RectangleShape make_bar(sf::Vector2f size, sf::Color color, sf::Vector2f pos
     rectangle.setPosition(position);
     return rectangle;
 }
-void draw_UI(sf::RenderWindow& window, std::string render_type) {
-    
-    // closed window
-    std::vector<sf::RectangleShape> layer1; // Background Colors
-    std::vector<sf::RectangleShape> layer2; // Outlines
-    std::vector<sf::RectangleShape> layer3; // Final Polish
-    
+std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window, std::string render_type) {
+
+    std::vector<std::vector<sf::RectangleShape>> vectors;
+
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Open/Close Button               [0]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Main background display for UI  [1]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // RGB boxes                       [2]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Radius            [3]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Mass              [4]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Velocity        [5]
+
+    // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
     sf::Color dark_grey(50, 50, 50);
-    sf::Color red(255, 0, 0);
-    sf::Color green(0, 255, 0);
-    sf::Color blue(0, 0, 255);
+    sf::Color pastel_red(196, 68, 61);
+    sf::Color pastel_green(106, 204, 92);
+    sf::Color pastel_blue(94, 89, 194);
 
-    if (render_type == "closed") {
-
-        // Bars surrounding the UI
-        sf::Vector2f hb = convert_resolution(sf::Vector2f(50, 10));
-        sf::Vector2f vb = convert_resolution(sf::Vector2f(10, 75));
-        sf::Vector2f backdrop = convert_resolution(sf::Vector2f(50, 75));
+    // Bars surrounding the Open/Close Button
+    sf::Vector2f hb = convert_resolution(sf::Vector2f(50, 7));
+    sf::Vector2f vb = convert_resolution(sf::Vector2f(7, 75));
+    sf::Vector2f backdrop = convert_resolution(sf::Vector2f(50, 75));
         
-        sf::RectangleShape rect1 = make_bar(hb, light_grey, sf::Vector2f(windowsize.x - hb.x, vb.y));
-        sf::RectangleShape rect2 = make_bar(vb, light_grey, sf::Vector2f(windowsize.x - hb.x, vb.y));
-        sf::RectangleShape rect3 = make_bar(hb, light_grey, sf::Vector2f(windowsize.x - hb.x, vb.y + vb.y));
-        sf::RectangleShape rect4 = make_bar(backdrop, dark_grey, sf::Vector2f(windowsize.x - hb.x, vb.y));
+    // Open/Close Button
+    sf::RectangleShape rect1 = make_bar(hb, light_grey, convert_resolution(sf::Vector2f(1920 - 50, 75)));
+    sf::RectangleShape rect2 = make_bar(vb, light_grey, convert_resolution(sf::Vector2f(1920 - 50, 75)));
+    sf::RectangleShape rect3 = make_bar(hb, light_grey, convert_resolution(sf::Vector2f(1920 - 50, 75 + 75)));
+    sf::RectangleShape rect4 = make_bar(backdrop, dark_grey, convert_resolution(sf::Vector2f(1920 - 50, 75)));
 
-        layer1.push_back(rect4);
-        layer2.push_back(rect1);
-        layer2.push_back(rect2);
-        layer2.push_back(rect3);
+    // Bars surrounding the general UI
+    sf::Vector2f bg = convert_resolution(sf::Vector2f(400, 625));
+    sf::Vector2f hbm = convert_resolution(sf::Vector2f(400, 7));
+    sf::Vector2f sb = convert_resolution(sf::Vector2f(7, 625));
 
-        // Backdrop colors of UI
+    // General Box Environment
+    sf::RectangleShape background = make_bar(bg, dark_grey, convert_resolution(sf::Vector2f(1920, 0)));
+    sf::RectangleShape topbar =     make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
+    sf::RectangleShape bottombar =  make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 625)));
+    sf::RectangleShape sidebar =    make_bar(sb, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
 
-    }
-    // opened window
-    else {
+    // General Button Sizes
+    sf::Vector2f plusminus =  convert_resolution(sf::Vector2f(20, 40));
+    sf::Vector2f colorbox = convert_resolution(sf::Vector2f(40, 40));
+    
+    // RGB Buttons
+    sf::RectangleShape red =    make_bar(colorbox,  pastel_red,   convert_resolution(sf::Vector2f(1920 + 75,  125)));
+    sf::RectangleShape rplus =  make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 55,  125)));
+    sf::RectangleShape rminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 115, 125)));
+    sf::RectangleShape green =  make_bar(colorbox,  pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
+    sf::RectangleShape gplus =  make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 230, 125)));
+    sf::RectangleShape gminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 170, 125)));
+    sf::RectangleShape blue =   make_bar(colorbox,  pastel_blue,  convert_resolution(sf::Vector2f(1920 + 305, 125)));
+    sf::RectangleShape bplus =  make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 345, 125)));
+    sf::RectangleShape bminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 285, 125)));
 
-    }
+    // Radius, Size, and Velocity
+    sf::RectangleShape radius = make_bar(colorbox, pastel_red, convert_resolution(sf::Vector2f(1920 + 75, 125)));
+    sf::RectangleShape radplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 55, 125)));
+    sf::RectangleShape radminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 115, 125)));
+    sf::RectangleShape mass = make_bar(colorbox, pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
+    sf::RectangleShape massplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 125)));
+    sf::RectangleShape massminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 125)));
+    sf::RectangleShape velocityx = make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
+    sf::RectangleShape velxplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
+    sf::RectangleShape velxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 285, 125)));
+    sf::RectangleShape velocityy = make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
+    sf::RectangleShape velyplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
+    sf::RectangleShape velyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 285, 125)));
 
-    for (int lane = 0; lane < layer1.size(); lane++) { window.draw(layer1[lane]); }
-    for (int lane = 0; lane < layer2.size(); lane++) { window.draw(layer2[lane]); }
-    for (int lane = 0; lane < layer3.size(); lane++) { window.draw(layer3[lane]); }
+    vectors[0].push_back(rect4);
+    vectors[0].push_back(rect1);
+    vectors[0].push_back(rect2);
+    vectors[0].push_back(rect3);
+
+    vectors[1].push_back(background);
+    vectors[1].push_back(topbar);
+    vectors[1].push_back(bottombar);
+    vectors[1].push_back(sidebar);
+
+    vectors[2].push_back(red);
+    vectors[2].push_back(rminus);
+    vectors[2].push_back(rplus);
+    vectors[2].push_back(green);
+    vectors[2].push_back(gminus);
+    vectors[2].push_back(gplus);
+    vectors[2].push_back(blue);
+    vectors[2].push_back(bminus);
+    vectors[2].push_back(bplus);
+    return vectors;
 }
 int main()
 {
@@ -311,6 +365,9 @@ int main()
     sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "SFML works!");
     window.setFramerateLimit(fps);
  
+    std::string UI_render_type = "closed";
+    std::vector<std::vector<sf::RectangleShape>> UI_vectors = create_UI(window, UI_render_type);
+
     std::vector<Particle*> particles;
 
     std::vector<sf::Vector3f> positions;
@@ -323,7 +380,6 @@ int main()
     // Standard particle features
     float size = 5.f;
     double mass = 150.f;
-    std::string UI_render_type = "closed";
 
     float deltaTime = 1.f/fps;
     int particle_amount = 1;
@@ -341,8 +397,8 @@ int main()
         {
             if (event.type == sf::Event::KeyPressed)
             {
-                int mouseX = sf::Mouse::getPosition().x;
-                int mouseY = sf::Mouse::getPosition().y;
+                int mouseX = sf::Mouse::getPosition(window).x;
+                int mouseY = sf::Mouse::getPosition(window).y;
 
                 if (event.key.code == sf::Keyboard::Escape) {
                     window.close();
@@ -366,9 +422,59 @@ int main()
                 else if (event.key.code == sf::Keyboard::Down) {
                     particle_amount -= 1;
                 }
+            }
+            if (event.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2i mouse = sf::Mouse::getPosition(window);
+                
+                bool place_particle = true;
+                if (UI_render_type == "closed") {
+
+                    // Check if they are wanting to open the window
+                    for (int i = 0; i < UI_vectors[0].size(); i++) {
+                        sf::Vector2f size = UI_vectors[0][i].getSize();
+                        sf::Vector2f pos = UI_vectors[0][i].getPosition();
+                        if (mouse.x > pos.x && mouse.y > pos.y && mouse.y < pos.y + size.y) {
+                            UI_render_type = "open";
+                            for (int object = 0; object < UI_vectors.size(); object++) {
+                                for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
+                                    sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
+                                    UI_vectors[object][rectangle].setPosition(pos.x - convert_x(400), pos.y);
+                                }
+                            }
+                            place_particle = false;
+                            break;
+                        }
+                    }
+                }
                 else {
+                    // Changing Color
+                    
+                    // Increase Mass / Size
+                    
+                    // Changing Starting Velocity
+                    
+                    // Check if they are wanting to close the window
+                    for (int i = 0; i < UI_vectors[0].size(); i++) {
+                        sf::Vector2f size = UI_vectors[0][i].getSize();
+                        sf::Vector2f pos = UI_vectors[0][i].getPosition();
+                        if (mouse.x > pos.x && mouse.x < pos.x + size.x && mouse.y > pos.y && mouse.y < pos.y + size.y) {
+                            UI_render_type = "closed";
+                            for (int object = 0; object < UI_vectors.size(); object++) {
+                                for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
+                                    sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
+                                    UI_vectors[object][rectangle].setPosition(pos.x + convert_x(400), pos.y);
+                                }
+                            }
+                            place_particle = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if (place_particle) {
+                    // Placing particle
                     for (int i = 0; i < particle_amount; i++) {
-                        sf::Vector2f position(mouseX+15*i, mouseY);
+                        sf::Vector2f position(mouse.x + 15 * i, mouse.y);
                         sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
                         int grav_type = 1;
                         sf::Vector2f* velocity = new sf::Vector2f(0, 10);
@@ -377,11 +483,6 @@ int main()
                         particles.push_back(particle);
                     }
                 }
-            }
-            if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2i mouse = sf::Mouse::getPosition(window);
-                if (UI_render_type == "open") { UI_render_type = "closed"; }
-                else { UI_render_type = "open"; }
             }
         }
 
@@ -398,7 +499,11 @@ int main()
         }
 
         // Draws the particle UI
-        draw_UI(window, UI_render_type);
+        for (int object = 0; object < UI_vectors.size(); object++) {
+            for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
+                window.draw(UI_vectors[object][rectangle]);
+            }
+        }
 
         window.display();
     }
