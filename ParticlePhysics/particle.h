@@ -12,6 +12,7 @@ public:
 	std::string type;
 	float radius;
 	double mass;
+	double vy;
 	sf::Vector2f* velocity;
 
 	Particle(float, sf::Vector2f, sf::Color, int, double, sf::Vector2f*);

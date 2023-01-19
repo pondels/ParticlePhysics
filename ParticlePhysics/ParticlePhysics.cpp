@@ -11,10 +11,7 @@ https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-d
 https://chat.openai.com/chat
 */
 
-sf::Vector2f windowsize(1920, 1080);
-void UI() {
-     
-}
+sf::Vector2f windowsize(1280, 720);
 float dot(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
@@ -125,25 +122,25 @@ void check_collisions2(std::vector<Particle*> particles, Particle* particle, sf:
     float particley = shape->getPosition().y;
 
     // Colliding with the walls
-    if (particlex < radius) {
+    if (particlex <= radius) {
         particle->velocity->x *= -restitution;
         particle->particle->setPosition(radius, particley);
         particlex = radius;
     }
-    else if (particlex > windowsize.x - radius) {
+    else if (particlex >= windowsize.x - radius) {
         particle->velocity->x *= -restitution;
         particle->particle->setPosition(windowsize.x - radius, particley);
         particlex = windowsize.x - radius;
     }
 
     // Colliding with the ground
-    if (particley > windowsize.y - radius) {
+    if (particley >= windowsize.y - radius) {
         particle->velocity->y *= -restitution;
         particle->particle->setPosition(particlex, windowsize.y - radius);
     }
 
     // Colliding with the ceiling
-    else if (particley < radius) {
+    else if (particley <= radius) {
         particle->velocity->y *= -restitution;
         particle->particle->setPosition(particlex, radius);
     }
@@ -163,36 +160,44 @@ void check_collisions2(std::vector<Particle*> particles, Particle* particle, sf:
             sf::Vector2f* v2 = particle->velocity;
 
             // Check for collision
-            float distance = sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-            if (distance <= r1 + r2 && distance != 0) {
-                // Calculate the collision normal
-                float overlap = (distance - r1 - r2) / 2.f;
+            bool ho = horizontal_overlap(x1, x2, r1, r2);
+            if (ho) {
+                bool vo = vertical_overlap(y1, y2, r1, r2);
+                if (vo) {
+                    float distance = sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+                    if (distance <= r1 + r2 && distance != 0) {
+                        // Calculate the collision normal
+                        float overlap = (distance - r1 - r2) / 2.f;
 
-                // If inside a particle, break out
-                float moveX = (overlap * (x1 - x2) / distance);
-                float moveY = (overlap * (y1 - y2) / distance);
+                        // If inside a particle, break out
+                        float moveX = (overlap * (x1 - x2) / distance);
+                        float moveY = (overlap * (y1 - y2) / distance);
 
-                particles[i]->particle->setPosition(x1 - moveX, y1 - moveY);
-                particle->particle->setPosition(x2 + moveX, y2 + moveY);
+                        particles[i]->particle->setPosition(x1 - moveX, y1 - moveY);
+                        particle->particle->setPosition(x2 + moveX, y2 + moveY);
 
-                // Calculate the impulse scalar
-                sf::Vector2f normal((x2 - x1) / distance, (y2 - y1) / distance);
-                sf::Vector2f tangent(-normal.y, normal.x);
-                sf::Vector2f relativeVelocity = *v2 - *v1;
+                        // Calculate the impulse scalar
+                        sf::Vector2f normal((x2 - x1) / distance, (y2 - y1) / distance);
+                        sf::Vector2f tangent(-normal.y, normal.x);
+                        sf::Vector2f relativeVelocity(v1->x - v2->x, v1->y - v2->y);
 
-                float impulseScalar = dot(relativeVelocity, tangent) * restitution / (1.0f / m1 + 1.0f / m2);
-                sf::Vector2f impulse = impulseScalar * tangent;
-                //float dotProductTangent1 = v1->x * normal.x + v1->y * normal.y;
-                //float dotProductTangent2 = v2->x * normal.x + v2->y * normal.y;
+                        float speed = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
+                        if (speed < 0) {
+                            break;
+                        }
+                        speed *= restitution;
+                        float impulse = (2 * speed) / (m1 + m2);
+                        float impulseScalar = dot(relativeVelocity, normal) * restitution / (1.0f / m1 + 1.0f / m2);
+                        //sf::Vector2f impulse = impulseScalar * normal;
+                        float dotProductTangent1 = v1->x * normal.x + v1->y * normal.y;
+                        float dotProductTangent2 = v2->x * normal.x + v2->y * normal.y;
 
-                //v1->x = normal.x * dotProductTangent1;
-                //v1->y = normal.y * dotProductTangent1;
-                //v2->x = normal.x * dotProductTangent2;
-                //v2->y = normal.y * dotProductTangent2;
-                v1->x += impulse.x / m1;
-                v1->y += impulse.y / m1;
-                v2->x -= impulse.x / m2;
-                v2->y -= impulse.y / m2;
+                        v1->x -= normal.x * impulse;
+                        v1->y -= normal.y * impulse;
+                        v2->x += normal.x * impulse;
+                        v2->y += normal.y * impulse;
+                    }
+                }
             }
         }
     }
@@ -204,14 +209,12 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     float x = shape->getPosition().x;
     float y = shape->getPosition().y;
 
-    // Applying gravity to particle
     particle->velocity->y += deltaTime * gravity * particle->mass;
-
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
 void update_particle(std::vector<Particle*> particles, int index, float deltaTime) {
     update_position(particles[index], particles[index]->particle, index, deltaTime);
-    check_collisions2(particles, particles[index], particles[index]->particle, index);
+    check_collisions1(particles, particles[index], particles[index]->particle, index);
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
 
@@ -248,10 +251,64 @@ sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b
     sf::Color color(r, g, b);
     return color;
 }
+sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
+    sf::Vector2f res(1920, 1080);
+    float x = windowsize.x * coordinates.x / res.x;
+    float y = windowsize.y * coordinates.y / res.y;
+    return sf::Vector2f(x, y);
+}
+sf::RectangleShape make_bar(sf::Vector2f size, sf::Color color, sf::Vector2f position) {
+    sf::RectangleShape rectangle(size);
+    rectangle.setFillColor(color);
+    rectangle.setPosition(position);
+    return rectangle;
+}
+void draw_UI(sf::RenderWindow& window, std::string render_type) {
+    
+    // closed window
+    std::vector<sf::RectangleShape> layer1; // Background Colors
+    std::vector<sf::RectangleShape> layer2; // Outlines
+    std::vector<sf::RectangleShape> layer3; // Final Polish
+    
+    sf::Color light_grey(75, 75, 75);
+    sf::Color dark_grey(50, 50, 50);
+    sf::Color red(255, 0, 0);
+    sf::Color green(0, 255, 0);
+    sf::Color blue(0, 0, 255);
+
+    if (render_type == "closed") {
+
+        // Bars surrounding the UI
+        sf::Vector2f hb = convert_resolution(sf::Vector2f(50, 10));
+        sf::Vector2f vb = convert_resolution(sf::Vector2f(10, 75));
+        sf::Vector2f backdrop = convert_resolution(sf::Vector2f(50, 75));
+        
+        sf::RectangleShape rect1 = make_bar(hb, light_grey, sf::Vector2f(windowsize.x - hb.x, vb.y));
+        sf::RectangleShape rect2 = make_bar(vb, light_grey, sf::Vector2f(windowsize.x - hb.x, vb.y));
+        sf::RectangleShape rect3 = make_bar(hb, light_grey, sf::Vector2f(windowsize.x - hb.x, vb.y + vb.y));
+        sf::RectangleShape rect4 = make_bar(backdrop, dark_grey, sf::Vector2f(windowsize.x - hb.x, vb.y));
+
+        layer1.push_back(rect4);
+        layer2.push_back(rect1);
+        layer2.push_back(rect2);
+        layer2.push_back(rect3);
+
+        // Backdrop colors of UI
+
+    }
+    // opened window
+    else {
+
+    }
+
+    for (int lane = 0; lane < layer1.size(); lane++) { window.draw(layer1[lane]); }
+    for (int lane = 0; lane < layer2.size(); lane++) { window.draw(layer2[lane]); }
+    for (int lane = 0; lane < layer3.size(); lane++) { window.draw(layer3[lane]); }
+}
 int main()
 {
     int fps = 165;
-    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "SFML works!", sf::Style::Fullscreen);
+    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "SFML works!");
     window.setFramerateLimit(fps);
  
     std::vector<Particle*> particles;
@@ -266,6 +323,7 @@ int main()
     // Standard particle features
     float size = 5.f;
     double mass = 150.f;
+    std::string UI_render_type = "closed";
 
     float deltaTime = 1.f/fps;
     int particle_amount = 1;
@@ -313,12 +371,17 @@ int main()
                         sf::Vector2f position(mouseX+15*i, mouseY);
                         sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
                         int grav_type = 1;
-                        sf::Vector2f* velocity = new sf::Vector2f(0, 0);
+                        sf::Vector2f* velocity = new sf::Vector2f(0, 10);
 
                         Particle* particle = new Particle(size, position, color, grav_type, mass, velocity);
                         particles.push_back(particle);
                     }
                 }
+            }
+            if (event.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2i mouse = sf::Mouse::getPosition(window);
+                if (UI_render_type == "open") { UI_render_type = "closed"; }
+                else { UI_render_type = "open"; }
             }
         }
 
@@ -333,6 +396,9 @@ int main()
         for (int i = 0; i < particles.size(); i++) {
             update_particle(particles, i, deltaTime);
         }
+
+        // Draws the particle UI
+        draw_UI(window, UI_render_type);
 
         window.display();
     }
