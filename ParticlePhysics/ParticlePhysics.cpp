@@ -284,6 +284,8 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Radius            [5]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Mass              [6]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Velocity        [7]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change # of Particles  [8]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Multipler       [9]
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
@@ -307,14 +309,14 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::RectangleShape rect4 = make_bar(backdrop, dark_grey, convert_resolution(sf::Vector2f(1920 - 50, 75)));
 
     // Bars surrounding the general UI
-    sf::Vector2f bg = convert_resolution(sf::Vector2f(400, 400));
-    sf::Vector2f hbm = convert_resolution(sf::Vector2f(400, 7));
-    sf::Vector2f sb = convert_resolution(sf::Vector2f(7, 400));
+    sf::Vector2f bg = convert_resolution(sf::Vector2f(450, 450));
+    sf::Vector2f hbm = convert_resolution(sf::Vector2f(450, 7));
+    sf::Vector2f sb = convert_resolution(sf::Vector2f(7, 450));
 
     // General Box Environment
     sf::RectangleShape background = make_bar(bg, dark_grey, convert_resolution(sf::Vector2f(1920, 0)));
     sf::RectangleShape topbar =     make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
-    sf::RectangleShape bottombar =  make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 400)));
+    sf::RectangleShape bottombar =  make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 450)));
     sf::RectangleShape sidebar =    make_bar(sb, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
 
     // General Button Sizes
@@ -346,6 +348,16 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::RectangleShape velyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 260)));
     sf::RectangleShape velyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 260)));
 
+    // Number of Particles to Spawn in
+    sf::RectangleShape amount = make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 320)));
+    sf::RectangleShape amtplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 320)));
+    sf::RectangleShape amtminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 320)));
+
+    // Multiplier for variable adjustments
+    sf::RectangleShape multiplier = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 320)));
+    sf::RectangleShape multiplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 320)));
+    sf::RectangleShape multiminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 320)));
+
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
     vectors[0].push_back(rect2);
@@ -375,6 +387,12 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors[7].push_back(velyminus);
     vectors[7].push_back(velocityy);
     vectors[7].push_back(velyplus);
+    vectors[8].push_back(amtminus);
+    vectors[8].push_back(amount);
+    vectors[8].push_back(amtplus);
+    vectors[9].push_back(multiminus);
+    vectors[9].push_back(multiplier);
+    vectors[9].push_back(multiplus);
     return vectors;
 }
 bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
@@ -404,6 +422,7 @@ int main()
     double mass = 150.f;
     float start_vel_x = 0;
     float start_vel_y = 0;
+    int modifier = 1;
 
     float deltaTime = 1.f/fps;
     int particle_amount = 1;
@@ -484,51 +503,78 @@ int main()
                             else if (i == 2) {
                                 // Adjusting Red
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { red--; }
-                                    else if (j == 2) { red++; }
+                                    if (j == 0) { red -= modifier; }
+                                    else if (j == 2) { red += modifier; }
+                                    if (red > 256) { red = 256; }
+                                    if (red < 0) { red = 0; }
                                     eventtype = 2;
                                 }
                             }
                             else if (i == 3) {
                                 // Adjusting Green
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { green--; }
-                                    else if (j == 2) { green++; }
+                                    if (j == 0) { green += modifier; }
+                                    else if (j == 2) { green += modifier; }
+                                    if (green > 256) { green = 256; }
+                                    if (green < 0) { green = 0; }
                                     eventtype == 3;
                                 }
                             }
                             else if (i == 4) {
                                 // Adjusting Blue
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { blue--; }
-                                    else if (j == 2) { blue++; }
+                                    if (j == 0) { blue -= modifier; }
+                                    else if (j == 2) { blue += modifier; }
+                                    if (blue > 256) { blue = 256; }
+                                    if (blue < 0) { blue = 0; }
                                     eventtype == 4;
                                 }
                             }
                             else if (i == 5) {
                                 // Adjusting The Radius
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { radius -= .5; }
-                                    else if (j == 2) { radius += .5; }
+                                    if (j == 0 && radius > 1) { radius -= modifier; }
+                                    else if (j == 2 && radius < windowsize.y) { radius += modifier; }
+                                    if (radius < 1) { radius = 1; }
+                                    if (radius > windowsize.y) { radius = windowsize.y; }
                                     eventtype == 5;
                                 }
                             }
                             else if (i == 6) {
                                 // Adjusting The Mass
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { mass--; }
-                                    else if (j == 2) { mass++; }
+                                    if (j == 0) { mass -= modifier; }
+                                    else if (j == 2) { mass += modifier; }
+                                    if (mass < 1) { mass = 1; }
                                     eventtype == 6;
                                 }
                             }
                             else if (i == 7) {
                                 // Adjusting The Velocity
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { start_vel_x--; }
-                                    else if (j == 2) { start_vel_x++; }
-                                    else if (j == 3) { start_vel_y--; }
-                                    else if (j == 5) { start_vel_y++; }
+                                    if (j == 0) { start_vel_x -= modifier; }
+                                    else if (j == 2) { start_vel_x += modifier; }
+                                    else if (j == 3) { start_vel_y -= modifier; }
+                                    else if (j == 5) { start_vel_y += modifier; }
                                     eventtype == 7;
+                                }
+                            }
+                            else if (i == 8) {
+                                // Adjusting The Number of Particles to Spawn
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { particle_amount -= modifier; }
+                                    else if (j == 2) { particle_amount += modifier; }
+                                    if (particle_amount < 1) { particle_amount = 1; }
+                                    eventtype == 8;
+                                }
+                            }
+                            else if (i == 9) {
+                                // Adjusting The Number of Particles to Spawn
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { modifier--; }
+                                    else if (j == 2) { modifier++; }
+                                    if (modifier < 1) { modifier = 1; }
+                                    eventtype == 9;
                                 }
                             }
                         }
