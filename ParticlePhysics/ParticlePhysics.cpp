@@ -547,7 +547,7 @@ int main()
                                 if (mouse_collide(mouse, pos, size)) {
                                     if (j == 0) { red -= modifier; }
                                     else if (j == 2) { red += modifier; }
-                                    if (red > 256) { red = 256; }
+                                    if (red > 255) { red = 255; }
                                     if (red < 0) { red = 0; }
                                     texts[0]->setString(std::to_string(red));
                                     eventtype = 2;
@@ -558,7 +558,7 @@ int main()
                                 if (mouse_collide(mouse, pos, size)) {
                                     if (j == 0) { green -= modifier; }
                                     else if (j == 2) { green += modifier; }
-                                    if (green > 256) { green = 256; }
+                                    if (green > 255) { green = 255; }
                                     if (green < 0) { green = 0; }
                                     texts[1]->setString(std::to_string(green));
                                     eventtype == 3;
@@ -569,7 +569,7 @@ int main()
                                 if (mouse_collide(mouse, pos, size)) {
                                     if (j == 0) { blue -= modifier; }
                                     else if (j == 2) { blue += modifier; }
-                                    if (blue > 256) { blue = 256; }
+                                    if (blue > 255) { blue = 255; }
                                     if (blue < 0) { blue = 0; }
                                     texts[2]->setString(std::to_string(blue));
                                     eventtype == 4;
@@ -671,7 +671,6 @@ int main()
         // Draws the text on top of UI
         for (int text = 0; text < texts.size(); text++) {
             window.draw(*texts.at(text));
-            std::cout << text << std::endl;
         }
 
         window.display();
