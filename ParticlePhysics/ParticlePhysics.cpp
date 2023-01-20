@@ -579,9 +579,9 @@ int main()
                                 // Adjusting The Radius
                                 if (mouse_collide(mouse, pos, size)) {
                                     if (j == 0 && radius > 1) { radius -= modifier; }
-                                    else if (j == 2 && radius < windowsize.y) { radius += modifier; }
+                                    else if (j == 2) { radius += modifier; }
                                     if (radius < 1) { radius = 1; }
-                                    if (radius > windowsize.y) { radius = windowsize.y; }
+                                    if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
                                     texts[3]->setString(std::to_string(radius));
                                     eventtype == 5;
                                 }
