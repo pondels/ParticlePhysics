@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include "particle.h"
 #include <cmath>
+#include <sstream>
 #include "KDTree.h"
 
 /*
@@ -399,36 +400,75 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
+void custom_message(sf::Text* message, sf::Vector2f position) {
+    message->setCharacterSize(15);
+    message->setFillColor(sf::Color::Black);
+    message->setPosition(position);
+}
 int main()
 {
     int fps = 165;
-    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "SFML works!");
+    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
     window.setFramerateLimit(fps);
  
     std::string UI_render_type = "closed";
     std::vector<std::vector<sf::RectangleShape>> UI_vectors = create_UI(window, UI_render_type);
 
     std::vector<Particle*> particles;
+    std::vector<sf::Text*> texts;
+    sf::Font font;
+    if (!font.loadFromFile("C:\\WINDOWS\\FONTS\\ARIAL.TTF")) {}
 
     std::vector<sf::Vector3f> positions;
     for (int i = 0; i < particles.size(); i++) {
         positions.push_back(sf::Vector3f(particles[i]->particle->getPosition().x, particles[i]->particle->getPosition().y, particles[i]->radius));
     }
 
+    // For perforance crap
     //kdt::KDTree<sf::Vector3f> kdtree(positions);
 
     // Standard particle features
-    float radius = 5.f;
-    double mass = 150.f;
-    float start_vel_x = 0;
-    float start_vel_y = 0;
+    int radius = 5;
+    int mass = 150;
+    int start_vel_x = 0;
+    int start_vel_y = 0;
     int modifier = 1;
-
-    float deltaTime = 1.f/fps;
     int particle_amount = 1;
     int red = 255;
     int green = 0;
     int blue = 0;
+
+    sf::Text* velxstring =      new sf::Text(std::to_string(start_vel_x), font);
+    sf::Text* velystring =      new sf::Text(std::to_string(start_vel_y), font);
+    sf::Text* masstring =       new sf::Text(std::to_string(mass), font);
+    sf::Text* radiustring =     new sf::Text(std::to_string(radius), font);
+    sf::Text* modistring =      new sf::Text(std::to_string(modifier), font);
+    sf::Text* part_amt_string = new sf::Text(std::to_string(particle_amount), font);
+    sf::Text* red_string =      new sf::Text(std::to_string(red), font);
+    sf::Text* green_string =    new sf::Text(std::to_string(green), font);
+    sf::Text* blue_string =     new sf::Text(std::to_string(blue), font);
+
+    custom_message(velxstring,      convert_resolution(sf::Vector2f(1920 + 132, 265)));
+    custom_message(velystring,      convert_resolution(sf::Vector2f(1920 + 247, 265)));
+    custom_message(masstring,       convert_resolution(sf::Vector2f(1920 + 247, 205)));
+    custom_message(radiustring,     convert_resolution(sf::Vector2f(1920 + 132, 205)));
+    custom_message(modistring,      convert_resolution(sf::Vector2f(1920 + 247, 325)));
+    custom_message(part_amt_string, convert_resolution(sf::Vector2f(1920 + 132, 325)));
+    custom_message(red_string,      convert_resolution(sf::Vector2f(1920 + 75, 130)));
+    custom_message(green_string,    convert_resolution(sf::Vector2f(1920 + 190, 130)));
+    custom_message(blue_string,     convert_resolution(sf::Vector2f(1920 + 305, 130)));
+
+    texts.push_back(red_string);
+    texts.push_back(green_string);
+    texts.push_back(blue_string);
+    texts.push_back(radiustring);
+    texts.push_back(masstring);
+    texts.push_back(velxstring);
+    texts.push_back(velystring);
+    texts.push_back(part_amt_string);
+    texts.push_back(modistring);
+
+    float deltaTime = 1.f/fps;
     bool r_dir = false;
     bool g_dir = true;
     bool b_dir = false;
@@ -445,12 +485,6 @@ int main()
                 }
                 else if (event.key.code == sf::Keyboard::Delete) {
                     particles.clear();
-                }
-                else if (event.key.code == sf::Keyboard::Up) {
-                    particle_amount += 1;
-                }
-                else if (event.key.code == sf::Keyboard::Down) {
-                    particle_amount -= 1;
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
@@ -470,6 +504,10 @@ int main()
                                     sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
                                     UI_vectors[object][rectangle].setPosition(pos.x - convert_x(400), pos.y);
                                 }
+                            }
+                            for (int object = 0; object < texts.size(); object++) {
+                                sf::Vector2f pos = texts[object]->getPosition();
+                                texts[object]->setPosition(pos.x - convert_x(400), pos.y);
                             }
                             eventtype = i;
                             break;
@@ -491,6 +529,10 @@ int main()
                                             UI_vectors[object][rectangle].setPosition(pos.x + convert_x(400), pos.y);
                                         }
                                     }
+                                    for (int object = 0; object < texts.size(); object++) {
+                                        sf::Vector2f pos = texts[object]->getPosition();
+                                        texts[object]->setPosition(pos.x + convert_x(400), pos.y);
+                                    }
                                     eventtype = i;
                                     break;
                                 }
@@ -507,16 +549,18 @@ int main()
                                     else if (j == 2) { red += modifier; }
                                     if (red > 256) { red = 256; }
                                     if (red < 0) { red = 0; }
+                                    texts[0]->setString(std::to_string(red));
                                     eventtype = 2;
                                 }
                             }
                             else if (i == 3) {
                                 // Adjusting Green
                                 if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { green += modifier; }
+                                    if (j == 0) { green -= modifier; }
                                     else if (j == 2) { green += modifier; }
                                     if (green > 256) { green = 256; }
                                     if (green < 0) { green = 0; }
+                                    texts[1]->setString(std::to_string(green));
                                     eventtype == 3;
                                 }
                             }
@@ -527,6 +571,7 @@ int main()
                                     else if (j == 2) { blue += modifier; }
                                     if (blue > 256) { blue = 256; }
                                     if (blue < 0) { blue = 0; }
+                                    texts[2]->setString(std::to_string(blue));
                                     eventtype == 4;
                                 }
                             }
@@ -537,6 +582,7 @@ int main()
                                     else if (j == 2 && radius < windowsize.y) { radius += modifier; }
                                     if (radius < 1) { radius = 1; }
                                     if (radius > windowsize.y) { radius = windowsize.y; }
+                                    texts[3]->setString(std::to_string(radius));
                                     eventtype == 5;
                                 }
                             }
@@ -546,6 +592,7 @@ int main()
                                     if (j == 0) { mass -= modifier; }
                                     else if (j == 2) { mass += modifier; }
                                     if (mass < 1) { mass = 1; }
+                                    texts[4]->setString(std::to_string(mass));
                                     eventtype == 6;
                                 }
                             }
@@ -556,6 +603,8 @@ int main()
                                     else if (j == 2) { start_vel_x += modifier; }
                                     else if (j == 3) { start_vel_y -= modifier; }
                                     else if (j == 5) { start_vel_y += modifier; }
+                                    texts[5]->setString(std::to_string(start_vel_x));
+                                    texts[6]->setString(std::to_string(start_vel_y));
                                     eventtype == 7;
                                 }
                             }
@@ -565,6 +614,7 @@ int main()
                                     if (j == 0) { particle_amount -= modifier; }
                                     else if (j == 2) { particle_amount += modifier; }
                                     if (particle_amount < 1) { particle_amount = 1; }
+                                    texts[7]->setString(std::to_string(particle_amount));
                                     eventtype == 8;
                                 }
                             }
@@ -574,6 +624,7 @@ int main()
                                     if (j == 0) { modifier--; }
                                     else if (j == 2) { modifier++; }
                                     if (modifier < 1) { modifier = 1; }
+                                    texts[8]->setString(std::to_string(modifier));
                                     eventtype == 9;
                                 }
                             }
@@ -585,7 +636,9 @@ int main()
                     // Placing particle
                     for (int i = 0; i < particle_amount; i++) {
                         sf::Vector2f position(mouse.x + 15 * i, mouse.y);
-                        sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
+                        // RAINBOW POWER!!!!!11!11!!
+                        //sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
+                        sf::Color color(red, green, blue);
                         int grav_type = 1;
                         sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
 
@@ -613,6 +666,12 @@ int main()
             for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
                 window.draw(UI_vectors[object][rectangle]);
             }
+        }
+
+        // Draws the text on top of UI
+        for (int text = 0; text < texts.size(); text++) {
+            window.draw(*texts.at(text));
+            std::cout << text << std::endl;
         }
 
         window.display();
