@@ -202,7 +202,10 @@ void check_collisions2(std::vector<Particle*> particles, Particle* particle, sf:
         }
     }
 }
-void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime) {
+void space_update_position() {
+    // Simulates space physics
+}
+void regular_update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime) {
     
     // Move particle so far along the given path.
     float gravity = 9.81f;
@@ -213,7 +216,7 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
 void update_particle(std::vector<Particle*> particles, int index, float deltaTime) {
-    update_position(particles[index], particles[index]->particle, index, deltaTime);
+    regular_update_position(particles[index], particles[index]->particle, index, deltaTime);
     check_collisions1(particles, particles[index], particles[index]->particle, index);
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
@@ -275,14 +278,19 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
 
     vectors.push_back(std::vector<sf::RectangleShape>()); // Open/Close Button               [0]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Main background display for UI  [1]
-    vectors.push_back(std::vector<sf::RectangleShape>()); // RGB boxes                       [2]
-    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Radius            [3]
-    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Mass              [4]
-    vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Velocity        [5]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Red Color Channel               [2]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Green Color Channel             [3]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Blue Color Channel              [4]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Radius            [5]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to Change Mass              [6]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Velocity        [7]
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
     sf::Color dark_grey(50, 50, 50);
+    sf::Color purple(139, 68, 219);
+    sf::Color pastel_orange(194, 130, 93);
+    sf::Color pastel_yellow(240, 233, 137);
     sf::Color pastel_red(196, 68, 61);
     sf::Color pastel_green(106, 204, 92);
     sf::Color pastel_blue(94, 89, 194);
@@ -299,14 +307,14 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::RectangleShape rect4 = make_bar(backdrop, dark_grey, convert_resolution(sf::Vector2f(1920 - 50, 75)));
 
     // Bars surrounding the general UI
-    sf::Vector2f bg = convert_resolution(sf::Vector2f(400, 625));
+    sf::Vector2f bg = convert_resolution(sf::Vector2f(400, 400));
     sf::Vector2f hbm = convert_resolution(sf::Vector2f(400, 7));
-    sf::Vector2f sb = convert_resolution(sf::Vector2f(7, 625));
+    sf::Vector2f sb = convert_resolution(sf::Vector2f(7, 400));
 
     // General Box Environment
     sf::RectangleShape background = make_bar(bg, dark_grey, convert_resolution(sf::Vector2f(1920, 0)));
     sf::RectangleShape topbar =     make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
-    sf::RectangleShape bottombar =  make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 625)));
+    sf::RectangleShape bottombar =  make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 400)));
     sf::RectangleShape sidebar =    make_bar(sb, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
 
     // General Button Sizes
@@ -315,8 +323,8 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     
     // RGB Buttons
     sf::RectangleShape red =    make_bar(colorbox,  pastel_red,   convert_resolution(sf::Vector2f(1920 + 75,  125)));
-    sf::RectangleShape rplus =  make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 55,  125)));
-    sf::RectangleShape rminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 115, 125)));
+    sf::RectangleShape rplus =  make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 115,  125)));
+    sf::RectangleShape rminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 55, 125)));
     sf::RectangleShape green =  make_bar(colorbox,  pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
     sf::RectangleShape gplus =  make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 230, 125)));
     sf::RectangleShape gminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 170, 125)));
@@ -325,39 +333,53 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::RectangleShape bminus = make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 285, 125)));
 
     // Radius, Size, and Velocity
-    sf::RectangleShape radius = make_bar(colorbox, pastel_red, convert_resolution(sf::Vector2f(1920 + 75, 125)));
-    sf::RectangleShape radplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 55, 125)));
-    sf::RectangleShape radminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 115, 125)));
-    sf::RectangleShape mass = make_bar(colorbox, pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
-    sf::RectangleShape massplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 125)));
-    sf::RectangleShape massminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 125)));
-    sf::RectangleShape velocityx = make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
-    sf::RectangleShape velxplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
-    sf::RectangleShape velxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 285, 125)));
-    sf::RectangleShape velocityy = make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
-    sf::RectangleShape velyplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
-    sf::RectangleShape velyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 285, 125)));
+    sf::RectangleShape radius =    make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 200)));
+    sf::RectangleShape radplus =   make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 200)));
+    sf::RectangleShape radminus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 200)));
+    sf::RectangleShape mass =      make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 200)));
+    sf::RectangleShape massplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 200)));
+    sf::RectangleShape massminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 200)));
+    sf::RectangleShape velocityx = make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 132, 260)));
+    sf::RectangleShape velxplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 260)));
+    sf::RectangleShape velxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 260)));
+    sf::RectangleShape velocityy = make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 247, 260)));
+    sf::RectangleShape velyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 260)));
+    sf::RectangleShape velyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 260)));
 
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
     vectors[0].push_back(rect2);
     vectors[0].push_back(rect3);
-
     vectors[1].push_back(background);
     vectors[1].push_back(topbar);
     vectors[1].push_back(bottombar);
     vectors[1].push_back(sidebar);
-
-    vectors[2].push_back(red);
     vectors[2].push_back(rminus);
+    vectors[2].push_back(red);
     vectors[2].push_back(rplus);
-    vectors[2].push_back(green);
-    vectors[2].push_back(gminus);
-    vectors[2].push_back(gplus);
-    vectors[2].push_back(blue);
-    vectors[2].push_back(bminus);
-    vectors[2].push_back(bplus);
+    vectors[3].push_back(gminus);
+    vectors[3].push_back(green);
+    vectors[3].push_back(gplus);
+    vectors[4].push_back(bminus);
+    vectors[4].push_back(blue);
+    vectors[4].push_back(bplus);
+    vectors[5].push_back(radminus);
+    vectors[5].push_back(radius);
+    vectors[5].push_back(radplus);
+    vectors[6].push_back(massminus);
+    vectors[6].push_back(mass);
+    vectors[6].push_back(massplus);
+    vectors[7].push_back(velxminus);
+    vectors[7].push_back(velocityx);
+    vectors[7].push_back(velxplus);
+    vectors[7].push_back(velyminus);
+    vectors[7].push_back(velocityy);
+    vectors[7].push_back(velyplus);
     return vectors;
+}
+bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
+    if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
+    return false;
 }
 int main()
 {
@@ -378,8 +400,10 @@ int main()
     //kdt::KDTree<sf::Vector3f> kdtree(positions);
 
     // Standard particle features
-    float size = 5.f;
+    float radius = 5.f;
     double mass = 150.f;
+    float start_vel_x = 0;
+    float start_vel_y = 0;
 
     float deltaTime = 1.f/fps;
     int particle_amount = 1;
@@ -397,21 +421,8 @@ int main()
         {
             if (event.type == sf::Event::KeyPressed)
             {
-                int mouseX = sf::Mouse::getPosition(window).x;
-                int mouseY = sf::Mouse::getPosition(window).y;
-
                 if (event.key.code == sf::Keyboard::Escape) {
                     window.close();
-                }
-
-                else if (event.key.code == sf::Keyboard::Add)
-                {
-                    size += 1.f;
-                    mass += 5.f;
-                }
-                else if (event.key.code == sf::Keyboard::Subtract) {
-                    size -= 1.f;
-                    mass -= 5.f;
                 }
                 else if (event.key.code == sf::Keyboard::Delete) {
                     particles.clear();
@@ -426,14 +437,14 @@ int main()
             if (event.type == sf::Event::MouseButtonPressed) {
                 sf::Vector2i mouse = sf::Mouse::getPosition(window);
                 
-                bool place_particle = true;
+                int eventtype = -1;
                 if (UI_render_type == "closed") {
 
                     // Check if they are wanting to open the window
                     for (int i = 0; i < UI_vectors[0].size(); i++) {
                         sf::Vector2f size = UI_vectors[0][i].getSize();
                         sf::Vector2f pos = UI_vectors[0][i].getPosition();
-                        if (mouse.x > pos.x && mouse.y > pos.y && mouse.y < pos.y + size.y) {
+                        if (mouse_collide(mouse, pos, size)) {
                             UI_render_type = "open";
                             for (int object = 0; object < UI_vectors.size(); object++) {
                                 for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
@@ -441,45 +452,98 @@ int main()
                                     UI_vectors[object][rectangle].setPosition(pos.x - convert_x(400), pos.y);
                                 }
                             }
-                            place_particle = false;
+                            eventtype = i;
                             break;
                         }
                     }
                 }
                 else {
-                    // Changing Color
-                    
-                    // Increase Mass / Size
-                    
-                    // Changing Starting Velocity
-                    
-                    // Check if they are wanting to close the window
-                    for (int i = 0; i < UI_vectors[0].size(); i++) {
-                        sf::Vector2f size = UI_vectors[0][i].getSize();
-                        sf::Vector2f pos = UI_vectors[0][i].getPosition();
-                        if (mouse.x > pos.x && mouse.x < pos.x + size.x && mouse.y > pos.y && mouse.y < pos.y + size.y) {
-                            UI_render_type = "closed";
-                            for (int object = 0; object < UI_vectors.size(); object++) {
-                                for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                                    sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
-                                    UI_vectors[object][rectangle].setPosition(pos.x + convert_x(400), pos.y);
+                    for (int i = 0; i < UI_vectors.size(); i++) {
+                        // Check if they are wanting to close the window
+                        for (int j = 0; j < UI_vectors[i].size(); j++) {
+                            sf::Vector2f size = UI_vectors[i][j].getSize();
+                            sf::Vector2f pos = UI_vectors[i][j].getPosition();
+                            if (i == 0) {
+                                if (mouse_collide(mouse, pos, size)) {
+                                    UI_render_type = "closed";
+                                    for (int object = 0; object < UI_vectors.size(); object++) {
+                                        for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
+                                            sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
+                                            UI_vectors[object][rectangle].setPosition(pos.x + convert_x(400), pos.y);
+                                        }
+                                    }
+                                    eventtype = i;
+                                    break;
                                 }
                             }
-                            place_particle = false;
-                            break;
+                            else if (i == 1) {
+                                if (mouse_collide(mouse, pos, size)) {
+                                    eventtype = 1;
+                                }
+                            }
+                            else if (i == 2) {
+                                // Adjusting Red
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { red--; }
+                                    else if (j == 2) { red++; }
+                                    eventtype = 2;
+                                }
+                            }
+                            else if (i == 3) {
+                                // Adjusting Green
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { green--; }
+                                    else if (j == 2) { green++; }
+                                    eventtype == 3;
+                                }
+                            }
+                            else if (i == 4) {
+                                // Adjusting Blue
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { blue--; }
+                                    else if (j == 2) { blue++; }
+                                    eventtype == 4;
+                                }
+                            }
+                            else if (i == 5) {
+                                // Adjusting The Radius
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { radius -= .5; }
+                                    else if (j == 2) { radius += .5; }
+                                    eventtype == 5;
+                                }
+                            }
+                            else if (i == 6) {
+                                // Adjusting The Mass
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { mass--; }
+                                    else if (j == 2) { mass++; }
+                                    eventtype == 6;
+                                }
+                            }
+                            else if (i == 7) {
+                                // Adjusting The Velocity
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { start_vel_x--; }
+                                    else if (j == 2) { start_vel_x++; }
+                                    else if (j == 3) { start_vel_y--; }
+                                    else if (j == 5) { start_vel_y++; }
+                                    eventtype == 7;
+                                }
+                            }
                         }
                     }
                 }
                 
-                if (place_particle) {
+                if (eventtype == -1) {
                     // Placing particle
                     for (int i = 0; i < particle_amount; i++) {
                         sf::Vector2f position(mouse.x + 15 * i, mouse.y);
                         sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
                         int grav_type = 1;
-                        sf::Vector2f* velocity = new sf::Vector2f(0, 10);
+                        sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
 
-                        Particle* particle = new Particle(size, position, color, grav_type, mass, velocity);
+                        Particle* particle = new Particle(radius, position, color, grav_type, mass, velocity);
                         particles.push_back(particle);
                     }
                 }
