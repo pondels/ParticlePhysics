@@ -12,7 +12,7 @@ https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-d
 https://chat.openai.com/chat
 */
 
-sf::Vector2f windowsize(1280, 720);
+sf::Vector2f windowsize(1920, 1080);
 float dot(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
@@ -408,7 +408,7 @@ void custom_message(sf::Text* message, sf::Vector2f position) {
 int main()
 {
     int fps = 165;
-    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
+    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)", sf::Style::Fullscreen);
     window.setFramerateLimit(fps);
  
     std::string UI_render_type = "closed";
@@ -469,6 +469,8 @@ int main()
     texts.push_back(modistring);
 
     float deltaTime = 1.f/fps;
+    float substeps = 8.f;
+    float subdt = deltaTime / substeps;
     bool r_dir = false;
     bool g_dir = true;
     bool b_dir = false;
@@ -650,29 +652,30 @@ int main()
         }
 
         window.clear();
+        for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
-        // Draws Pixels
-        for (int i = 0; i < particles.size(); i++) {
-            window.draw(*particles.at(i)->particle);
-        }
-        
-        // Applies Updates to pixels after drawing
-        for (int i = 0; i < particles.size(); i++) {
-            update_particle(particles, i, deltaTime);
-        }
+            // Draws Pixels
+            for (int i = 0; i < particles.size(); i++) {
+                window.draw(*particles.at(i)->particle);
+            }
 
-        // Draws the particle UI
-        for (int object = 0; object < UI_vectors.size(); object++) {
-            for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                window.draw(UI_vectors[object][rectangle]);
+            // Applies Updates to pixels after drawing
+            for (int i = 0; i < particles.size(); i++) {
+                update_particle(particles, i, subdt);
+            }
+
+            // Draws the particle UI
+            for (int object = 0; object < UI_vectors.size(); object++) {
+                for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
+                    window.draw(UI_vectors[object][rectangle]);
+                }
+            }
+
+            // Draws the text on top of UI
+            for (int text = 0; text < texts.size(); text++) {
+                window.draw(*texts.at(text));
             }
         }
-
-        // Draws the text on top of UI
-        for (int text = 0; text < texts.size(); text++) {
-            window.draw(*texts.at(text));
-        }
-
         window.display();
     }
 
