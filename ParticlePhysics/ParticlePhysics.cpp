@@ -12,7 +12,7 @@ https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-d
 https://chat.openai.com/chat
 */
 
-sf::Vector2f windowsize(1920, 1080);
+sf::Vector2f windowsize(640, 360);
 float dot(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
@@ -101,102 +101,10 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
                         speed *= restitution;
                         float impulse = float((2 * speed) / (m1 + m2));
 
-                        v1->x -= speed * vCollisionNorm.x;
-                        v1->y -= speed * vCollisionNorm.y;
-                        v2->x += speed * vCollisionNorm.x;
-                        v2->y += speed * vCollisionNorm.y;
-                    }
-                }
-            }
-        }
-    }
-}
-void check_collisions2(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index) {
-    
-    // Update Direction & Speed of particle based on collisions.
-
-    // Rate at which energy is lost against the wall/floor
-    float restitution = .9f;
-
-    float radius = shape->getGlobalBounds().height / 2;
-    float particlex = shape->getPosition().x;
-    float particley = shape->getPosition().y;
-
-    // Colliding with the walls
-    if (particlex <= radius) {
-        particle->velocity->x *= -restitution;
-        particle->particle->setPosition(radius, particley);
-        particlex = radius;
-    }
-    else if (particlex >= windowsize.x - radius) {
-        particle->velocity->x *= -restitution;
-        particle->particle->setPosition(windowsize.x - radius, particley);
-        particlex = windowsize.x - radius;
-    }
-
-    // Colliding with the ground
-    if (particley >= windowsize.y - radius) {
-        particle->velocity->y *= -restitution;
-        particle->particle->setPosition(particlex, windowsize.y - radius);
-    }
-
-    // Colliding with the ceiling
-    else if (particley <= radius) {
-        particle->velocity->y *= -restitution;
-        particle->particle->setPosition(particlex, radius);
-    }
-
-    for (int i = 0; i < particles.size(); i++) {
-        if (i != index) {
-            float x1 = particles[i]->particle->getPosition().x;
-            float y1 = particles[i]->particle->getPosition().y;
-            float r1 = particles[i]->radius;
-            double m1 = particles[i]->mass;
-            sf::Vector2f* v1 = particles[i]->velocity;
-
-            float x2 = shape->getPosition().x;
-            float y2 = shape->getPosition().y;
-            float r2 = particle->radius;
-            double m2 = particle->mass;
-            sf::Vector2f* v2 = particle->velocity;
-
-            // Check for collision
-            bool ho = horizontal_overlap(x1, x2, r1, r2);
-            if (ho) {
-                bool vo = vertical_overlap(y1, y2, r1, r2);
-                if (vo) {
-                    float distance = sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-                    if (distance <= r1 + r2 && distance != 0) {
-                        // Calculate the collision normal
-                        float overlap = (distance - r1 - r2) / 2.f;
-
-                        // If inside a particle, break out
-                        float moveX = (overlap * (x1 - x2) / distance);
-                        float moveY = (overlap * (y1 - y2) / distance);
-
-                        particles[i]->particle->setPosition(x1 - moveX, y1 - moveY);
-                        particle->particle->setPosition(x2 + moveX, y2 + moveY);
-
-                        // Calculate the impulse scalar
-                        sf::Vector2f normal((x2 - x1) / distance, (y2 - y1) / distance);
-                        sf::Vector2f tangent(-normal.y, normal.x);
-                        sf::Vector2f relativeVelocity(v1->x - v2->x, v1->y - v2->y);
-
-                        float speed = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
-                        if (speed < 0) {
-                            break;
-                        }
-                        speed *= restitution;
-                        float impulse = (2 * speed) / (m1 + m2);
-                        float impulseScalar = dot(relativeVelocity, normal) * restitution / (1.0f / m1 + 1.0f / m2);
-                        //sf::Vector2f impulse = impulseScalar * normal;
-                        float dotProductTangent1 = v1->x * normal.x + v1->y * normal.y;
-                        float dotProductTangent2 = v2->x * normal.x + v2->y * normal.y;
-
-                        v1->x -= normal.x * impulse;
-                        v1->y -= normal.y * impulse;
-                        v2->x += normal.x * impulse;
-                        v2->y += normal.y * impulse;
+                        v1->x -= impulse * m2 * vCollisionNorm.x;
+                        v1->y -= impulse * m2 * vCollisionNorm.y;
+                        v2->x += impulse * m1 * vCollisionNorm.x;
+                        v2->y += impulse * m1 * vCollisionNorm.y;
                     }
                 }
             }
@@ -209,7 +117,8 @@ void space_update_position() {
 void regular_update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime) {
     
     // Move particle so far along the given path.
-    float gravity = 9.81f;
+    //float gravity = 9.81f;
+    float gravity = 0.f;
     float x = shape->getPosition().x;
     float y = shape->getPosition().y;
 
@@ -408,7 +317,7 @@ void custom_message(sf::Text* message, sf::Vector2f position) {
 int main()
 {
     int fps = 165;
-    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)", sf::Style::Fullscreen);
+    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
     window.setFramerateLimit(fps);
  
     std::string UI_render_type = "closed";
@@ -639,13 +548,14 @@ int main()
                     for (int i = 0; i < particle_amount; i++) {
                         sf::Vector2f position(mouse.x + 15 * i, mouse.y);
                         // RAINBOW POWER!!!!!11!11!!
-                        //sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
-                        sf::Color color(red, green, blue);
+                        sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
+                        //sf::Color color(red, green, blue);
                         int grav_type = 1;
                         sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
 
                         Particle* particle = new Particle(radius, position, color, grav_type, mass, velocity);
                         particles.push_back(particle);
+                        std::cout << particles.size() << std::endl;
                     }
                 }
             }
