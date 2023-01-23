@@ -12,7 +12,7 @@ https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-d
 https://chat.openai.com/chat
 */
 
-sf::Vector2f windowsize(640, 360);
+sf::Vector2f windowsize(1600, 900);
 float dot(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
@@ -114,19 +114,17 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
 void space_update_position() {
     // Simulates space physics
 }
-void regular_update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime) {
+void regular_update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity) {
     
     // Move particle so far along the given path.
-    //float gravity = 9.81f;
-    float gravity = 0.f;
     float x = shape->getPosition().x;
     float y = shape->getPosition().y;
 
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void update_particle(std::vector<Particle*> particles, int index, float deltaTime) {
-    regular_update_position(particles[index], particles[index]->particle, index, deltaTime);
+void update_particle(std::vector<Particle*> particles, int index, float deltaTime, float gravity) {
+    regular_update_position(particles[index], particles[index]->particle, index, deltaTime, gravity);
     check_collisions1(particles, particles[index], particles[index]->particle, index);
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
@@ -196,6 +194,7 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Velocity        [7]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change # of Particles  [8]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Multipler       [9]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Gravity        [10]
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
@@ -268,6 +267,11 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::RectangleShape multiplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 320)));
     sf::RectangleShape multiminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 320)));
 
+    // Gravity constant
+    sf::RectangleShape gravity = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 380)));
+    sf::RectangleShape gravplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 380)));
+    sf::RectangleShape gravminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 380)));
+
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
     vectors[0].push_back(rect2);
@@ -303,6 +307,9 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors[9].push_back(multiminus);
     vectors[9].push_back(multiplier);
     vectors[9].push_back(multiplus);
+    vectors[10].push_back(gravminus);
+    vectors[10].push_back(gravity);
+    vectors[10].push_back(gravplus);
     return vectors;
 }
 bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
@@ -346,6 +353,7 @@ int main()
     int red = 255;
     int green = 0;
     int blue = 0;
+    float gravity = 9.81f;
 
     sf::Text* velxstring =      new sf::Text(std::to_string(start_vel_x), font);
     sf::Text* velystring =      new sf::Text(std::to_string(start_vel_y), font);
@@ -356,6 +364,7 @@ int main()
     sf::Text* red_string =      new sf::Text(std::to_string(red), font);
     sf::Text* green_string =    new sf::Text(std::to_string(green), font);
     sf::Text* blue_string =     new sf::Text(std::to_string(blue), font);
+    sf::Text* grav_string =     new sf::Text(std::to_string(gravity), font);
 
     custom_message(velxstring,      convert_resolution(sf::Vector2f(1920 + 132, 265)));
     custom_message(velystring,      convert_resolution(sf::Vector2f(1920 + 247, 265)));
@@ -366,6 +375,7 @@ int main()
     custom_message(red_string,      convert_resolution(sf::Vector2f(1920 + 75, 130)));
     custom_message(green_string,    convert_resolution(sf::Vector2f(1920 + 190, 130)));
     custom_message(blue_string,     convert_resolution(sf::Vector2f(1920 + 305, 130)));
+    custom_message(grav_string,     convert_resolution(sf::Vector2f(1920 + 190, 385)));
 
     texts.push_back(red_string);
     texts.push_back(green_string);
@@ -376,6 +386,7 @@ int main()
     texts.push_back(velystring);
     texts.push_back(part_amt_string);
     texts.push_back(modistring);
+    texts.push_back(grav_string);
 
     float deltaTime = 1.f/fps;
     float substeps = 8.f;
@@ -387,7 +398,7 @@ int main()
     while (window.isOpen())
     {
         sf::Event event;
-        while (window.pollEvent(event))
+        while (window.pollEvent(event)) 
         {
             if (event.type == sf::Event::KeyPressed)
             {
@@ -539,6 +550,16 @@ int main()
                                     eventtype == 9;
                                 }
                             }
+                            else if (i == 10) {
+                            // Adjusting The Number of Particles to Spawn
+                            if (mouse_collide(mouse, pos, size)) {
+                                if (j == 0) { gravity -= .01 * modifier; }
+                                else if (j == 2) { gravity += .01 * modifier; }
+                                if (gravity < 0) { gravity = 0; }
+                                texts[9]->setString(std::to_string(gravity));
+                                eventtype == 10;
+                            }
+                            }
                         }
                     }
                 }
@@ -571,7 +592,7 @@ int main()
 
             // Applies Updates to pixels after drawing
             for (int i = 0; i < particles.size(); i++) {
-                update_particle(particles, i, subdt);
+                update_particle(particles, i, subdt, gravity);
             }
 
             // Draws the particle UI
