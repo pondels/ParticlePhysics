@@ -14,25 +14,11 @@ public:
 	float radius;
 	double mass;
 	double vy;
+	float temperature;
 	sf::Vector2f* velocity;
+	int viscosity;
 
-	Particle(float, sf::Vector2f, sf::Color, int, double, sf::Vector2f*);
-};
-
-class Fire : public Particle {
-public: 
-	std::string type = "fire";
-	float temp = 72.f; // Default Room Temp
-
-	using Particle::Particle;
-};
-
-class Water : public Particle {
-public:
-	std::string type = "water";
-	float viscocity = 1; // Default water viscosity
-
-	using Particle::Particle;
+	Particle(float, sf::Vector2f, sf::Color, std::string, double, sf::Vector2f*, float, int);
 };
 
 #endif

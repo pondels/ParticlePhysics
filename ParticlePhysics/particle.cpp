@@ -1,7 +1,7 @@
 #include <iostream>
 #include "particle.h"
 
-Particle::Particle(float size, sf::Vector2f position, sf::Color color, int phys_type, double particle_mass, sf::Vector2f* v) {
+Particle::Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f* v, float temp, int visc) {
 	particle = new sf::CircleShape(size);
 	particle->setPosition(position);
 	particle->setOrigin(particle->getGlobalBounds().width / 2, particle->getGlobalBounds().height / 2);
@@ -11,4 +11,15 @@ Particle::Particle(float size, sf::Vector2f position, sf::Color color, int phys_
 	mass = particle_mass;
 	velocity = v;
 	radius = size;
+	type = particle_type;
+	temperature = temp;
+	viscosity = visc;
 }
+
+//class Water : public Particle {
+//public:
+//	std::string type = "water";
+//	float viscocity = 1; // Default water viscosity
+//
+//	using Particle::Particle;
+//};

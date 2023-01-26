@@ -3,6 +3,7 @@
 #include "particle.h"
 #include <cmath>
 #include <sstream>
+#include <algorithm>
 #include "KDTree.h"
 
 /*
@@ -10,11 +11,55 @@
 *****SOURCES*****
 https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 https://chat.openai.com/chat
+https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
 */
 
 sf::Vector2f windowsize(1600, 900);
 float dot(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
+}
+sf::Color fire_color_updater(float temperature) {
+    
+    float R, G, B;
+
+    float temp = temperature / 100;
+
+    // Red
+    if (temp <= 66) R = 255;
+    else {
+        R = temp - 60;
+        R = 329.698727446 * pow(R, -0.1332047592);
+        if (R < 0) R = 0;
+        if (R > 255) R = 255;
+    }
+
+        // Green
+    if (temp <= 66) {
+        G = temp;
+        G = 99.4708025861 * log(G) - 161.1195681661;
+        if (G < 0) G = 0;
+        if (G > 255) G = 255;
+    }
+    else {
+        G = temp - 60;
+        G = 288.1221695283 * pow(G, -0.0755148492);
+        if (G < 0) G = 0;
+        if (G > 255) G = 255;
+    }
+
+    // Blue
+    if (temp >= 66) B = 255;
+    else {
+        if (temp <= 19) B = 0;
+        else {
+            B = temp - 10;
+            B = 138.5177312231 * log(B) - 305.0447927307;
+            if (B < 0) B = 0;
+            if (B > 255) B = 255;
+        }
+    }
+    sf::Color particle_color = sf::Color(R, G, B);
+    return particle_color;
 }
 bool vertical_overlap(float y1, float y2, float r1, float r2) {
     if (abs(y1 - y2) - (r1 + r2) < 0) return true;
@@ -80,6 +125,26 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
                 if (vo) {
                     float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
                     if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
+                        
+                        if (particle->type == "fire" && particles[i]->type == "fire") {
+                            if (particle->temperature > particles[i]->temperature) {
+                                particle->temperature--;
+                                particles[i]->temperature++;
+                                sf::Color first_color = fire_color_updater(particle->temperature);
+                                sf::Color second_color = fire_color_updater(particles[i]->temperature);
+                                particle->particle->setFillColor(first_color);
+                                particles[i]->particle->setFillColor(second_color);
+                            }
+                            else if (particle->temperature < particles[i]->temperature) {
+                                particle->temperature++;
+                                particles[i]->temperature--;
+                                sf::Color first_color = fire_color_updater(particle->temperature);
+                                sf::Color second_color = fire_color_updater(particles[i]->temperature);
+                                particle->particle->setFillColor(first_color);
+                                particles[i]->particle->setFillColor(second_color);
+                            }
+                        }
+
                         float distance = sqrtf(squaredistance);
                         float overlap = (distance - r1 - r2) / 2.f;
 
@@ -193,6 +258,8 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Multipler       [9]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Gravity        [10]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Box to toggle rainbow mode     [11]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to toggle temperature      [12]
+
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
@@ -274,6 +341,11 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     // Rainbow Mode
     sf::RectangleShape rainbow = make_bar(colorbox, white, convert_resolution(sf::Vector2f(1920 + 190, 450)));
 
+    // Temperature
+    sf::RectangleShape temperature = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 490)));
+    sf::RectangleShape tempplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 490)));
+    sf::RectangleShape tempminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 490)));
+
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
     vectors[0].push_back(rect2);
@@ -313,6 +385,9 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors[10].push_back(gravity);
     vectors[10].push_back(gravplus);
     vectors[11].push_back(rainbow);
+    vectors[12].push_back(tempminus);
+    vectors[12].push_back(temperature);
+    vectors[12].push_back(tempplus);
     return vectors;
 }
 bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
@@ -358,6 +433,7 @@ int main()
     int blue = 0;
     float gravity = 9.81f;
     bool rainbow_mode = false;
+    int temperature = 1500;
 
     sf::Text* velxstring =      new sf::Text(std::to_string(start_vel_x), font);
     sf::Text* velystring =      new sf::Text(std::to_string(start_vel_y), font);
@@ -369,6 +445,7 @@ int main()
     sf::Text* green_string =    new sf::Text(std::to_string(green), font);
     sf::Text* blue_string =     new sf::Text(std::to_string(blue), font);
     sf::Text* grav_string =     new sf::Text(std::to_string(gravity), font);
+    sf::Text* temp_string =     new sf::Text(std::to_string(temperature), font);
 
     custom_message(velxstring,      convert_resolution(sf::Vector2f(1920 + 132, 265)));
     custom_message(velystring,      convert_resolution(sf::Vector2f(1920 + 247, 265)));
@@ -380,6 +457,7 @@ int main()
     custom_message(green_string,    convert_resolution(sf::Vector2f(1920 + 190, 130)));
     custom_message(blue_string,     convert_resolution(sf::Vector2f(1920 + 305, 130)));
     custom_message(grav_string,     convert_resolution(sf::Vector2f(1920 + 190, 385)));
+    custom_message(temp_string,     convert_resolution(sf::Vector2f(1920 + 190, 465)));
 
     texts.push_back(red_string);
     texts.push_back(green_string);
@@ -391,6 +469,7 @@ int main()
     texts.push_back(part_amt_string);
     texts.push_back(modistring);
     texts.push_back(grav_string);
+    texts.push_back(temp_string);
 
     float deltaTime = 1.f/fps;
     float substeps = 8.f;
@@ -487,7 +566,7 @@ int main()
                                     if (green > 255) { green = 255; }
                                     if (green < 0) { green = 0; }
                                     texts[1]->setString(std::to_string(green));
-                                    eventtype == 3;
+                                    eventtype = 3;
                                 }
                             }
                             else if (i == 4) {
@@ -498,7 +577,7 @@ int main()
                                     if (blue > 255) { blue = 255; }
                                     if (blue < 0) { blue = 0; }
                                     texts[2]->setString(std::to_string(blue));
-                                    eventtype == 4;
+                                    eventtype = 4;
                                 }
                             }
                             else if (i == 5) {
@@ -509,7 +588,7 @@ int main()
                                     if (radius < 1) { radius = 1; }
                                     if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
                                     texts[3]->setString(std::to_string(radius));
-                                    eventtype == 5;
+                                    eventtype = 5;
                                 }
                             }
                             else if (i == 6) {
@@ -519,7 +598,7 @@ int main()
                                     else if (j == 2) { mass += modifier; }
                                     if (mass < 1) { mass = 1; }
                                     texts[4]->setString(std::to_string(mass));
-                                    eventtype == 6;
+                                    eventtype = 6;
                                 }
                             }
                             else if (i == 7) {
@@ -531,7 +610,7 @@ int main()
                                     else if (j == 5) { start_vel_y += modifier; }
                                     texts[5]->setString(std::to_string(start_vel_x));
                                     texts[6]->setString(std::to_string(start_vel_y));
-                                    eventtype == 7;
+                                    eventtype = 7;
                                 }
                             }
                             else if (i == 8) {
@@ -541,7 +620,7 @@ int main()
                                     else if (j == 2) { particle_amount += modifier; }
                                     if (particle_amount < 1) { particle_amount = 1; }
                                     texts[7]->setString(std::to_string(particle_amount));
-                                    eventtype == 8;
+                                    eventtype = 8;
                                 }
                             }
                             else if (i == 9) {
@@ -551,7 +630,7 @@ int main()
                                     else if (j == 2) { modifier++; }
                                     if (modifier < 1) { modifier = 1; }
                                     texts[8]->setString(std::to_string(modifier));
-                                    eventtype == 9;
+                                    eventtype = 9;
                                 }
                             }
                             else if (i == 10) {
@@ -561,7 +640,7 @@ int main()
                                     else if (j == 2) { gravity += .01 * modifier; }
                                     if (gravity < 0) { gravity = 0; }
                                     texts[9]->setString(std::to_string(gravity));
-                                    eventtype == 10;
+                                    eventtype = 10;
                                 }
                             }
                             else if (i == 11) {
@@ -577,7 +656,16 @@ int main()
                                             UI_vectors[11][j].setFillColor(sf::Color(215, 215, 0));
                                         }
                                     }
-                                    eventtype == 11;
+                                    eventtype = 11;
+                                }
+                            }
+                            else if (i == 12) {
+                                // Adjusting The Particle's Temperature
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { temperature -= modifier; }
+                                    else if (j == 2) { temperature += modifier; }
+                                    texts[10]->setString(std::to_string(temperature));
+                                    eventtype = 12;
                                 }
                             }
                         }
@@ -590,14 +678,19 @@ int main()
                         sf::Vector2f position(mouse.x + 15 * i, mouse.y);
                         
                         sf::Color color;
-                        if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
-                        else { color = sf::Color(red, green, blue); }
-                        int grav_type = 1;
+                        std::string type = "fire";
+                        if (type != "fire") {
+                            if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
+                            else { color = sf::Color(red, green, blue); }
+                        }
+                        else {
+                            color = fire_color_updater(temperature);
+                        }
                         sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
 
-                        Fire* particle = new Fire(radius, position, color, grav_type, mass, velocity);
+
+                        Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, 1);
                         particles.push_back(particle);
-                        std::cout << particles.size() << " : " << particle->type << std::endl;
                     }
                     texts[0]->setString(std::to_string(red));
                     texts[1]->setString(std::to_string(green));
