@@ -23,41 +23,33 @@ sf::Color fire_color_updater(float temperature) {
     float R, G, B;
 
     float temp = temperature / 100;
-
-    // Red
-    if (temp <= 66) R = 255;
-    else {
-        R = temp - 60;
-        R = 329.698727446 * pow(R, -0.1332047592);
-        if (R < 0) R = 0;
-        if (R > 255) R = 255;
-    }
-
-        // Green
     if (temp <= 66) {
-        G = temp;
-        G = 99.4708025861 * log(G) - 161.1195681661;
-        if (G < 0) G = 0;
-        if (G > 255) G = 255;
+        // Cold: fade from black to red
+        R = temp;
+        R = 99.4708025861 * log(R) - 161.1195681661;
+        G = 0;
+        B = 0;
+    }
+    else if (temp <= 140) {
+        // Warm: fade from red to white
+        R = 255;
+        G = (temp - 66) / (140 - 66) * 255;
+        B = (temp - 66) / (140 - 66) * 255;
     }
     else {
-        G = temp - 60;
-        G = 288.1221695283 * pow(G, -0.0755148492);
-        if (G < 0) G = 0;
-        if (G > 255) G = 255;
+        // Hot: white
+        R = 255;
+        G = 255;
+        B = 255;
     }
 
-    // Blue
-    if (temp >= 66) B = 255;
-    else {
-        if (temp <= 19) B = 0;
-        else {
-            B = temp - 10;
-            B = 138.5177312231 * log(B) - 305.0447927307;
-            if (B < 0) B = 0;
-            if (B > 255) B = 255;
-        }
-    }
+    if (R < 0) R = 0;
+    if (R > 255) R = 255;
+    if (G < 0) G = 0;
+    if (G > 255) G = 255;
+    if (B < 0) B = 0;
+    if (B > 255) B = 255;
+
     sf::Color particle_color = sf::Color(R, G, B);
     return particle_color;
 }
@@ -664,6 +656,7 @@ int main()
                                 if (mouse_collide(mouse, pos, size)) {
                                     if (j == 0) { temperature -= modifier; }
                                     else if (j == 2) { temperature += modifier; }
+                                    if (temperature < 0) temperature = 0;
                                     texts[10]->setString(std::to_string(temperature));
                                     eventtype = 12;
                                 }
