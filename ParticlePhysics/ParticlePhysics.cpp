@@ -111,10 +111,7 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
         }
     }
 }
-void space_update_position() {
-    // Simulates space physics
-}
-void regular_update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity) {
+void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity) {
     
     // Move particle so far along the given path.
     float x = shape->getPosition().x;
@@ -124,13 +121,13 @@ void regular_update_position(Particle* particle, sf::CircleShape* shape, int ind
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
 void update_particle(std::vector<Particle*> particles, int index, float deltaTime, float gravity) {
-    regular_update_position(particles[index], particles[index]->particle, index, deltaTime, gravity);
+    update_position(particles[index], particles[index]->particle, index, deltaTime, gravity);
     check_collisions1(particles, particles[index], particles[index]->particle, index);
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
 
     // How much the color gap is between particles
-    int gap = 15;
+    int gap = 1;
 
     if (r < 255 && r_dir) {
         g_dir = true;
@@ -195,6 +192,7 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change # of Particles  [8]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Multipler       [9]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Gravity        [10]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to toggle rainbow mode     [11]
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
@@ -205,6 +203,7 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::Color pastel_red(196, 68, 61);
     sf::Color pastel_green(106, 204, 92);
     sf::Color pastel_blue(94, 89, 194);
+    sf::Color white(215, 215, 185);
 
     // Bars surrounding the Open/Close Button
     sf::Vector2f hb = convert_resolution(sf::Vector2f(50, 7));
@@ -272,6 +271,9 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     sf::RectangleShape gravplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 380)));
     sf::RectangleShape gravminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 380)));
 
+    // Rainbow Mode
+    sf::RectangleShape rainbow = make_bar(colorbox, white, convert_resolution(sf::Vector2f(1920 + 190, 450)));
+
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
     vectors[0].push_back(rect2);
@@ -310,6 +312,7 @@ std::vector<std::vector<sf::RectangleShape>> create_UI(sf::RenderWindow& window,
     vectors[10].push_back(gravminus);
     vectors[10].push_back(gravity);
     vectors[10].push_back(gravplus);
+    vectors[11].push_back(rainbow);
     return vectors;
 }
 bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
@@ -354,6 +357,7 @@ int main()
     int green = 0;
     int blue = 0;
     float gravity = 9.81f;
+    bool rainbow_mode = false;
 
     sf::Text* velxstring =      new sf::Text(std::to_string(start_vel_x), font);
     sf::Text* velystring =      new sf::Text(std::to_string(start_vel_y), font);
@@ -551,14 +555,30 @@ int main()
                                 }
                             }
                             else if (i == 10) {
-                            // Adjusting The Number of Particles to Spawn
-                            if (mouse_collide(mouse, pos, size)) {
-                                if (j == 0) { gravity -= .01 * modifier; }
-                                else if (j == 2) { gravity += .01 * modifier; }
-                                if (gravity < 0) { gravity = 0; }
-                                texts[9]->setString(std::to_string(gravity));
-                                eventtype == 10;
+                                // Adjusting The Number of Particles to Spawn
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { gravity -= .01 * modifier; }
+                                    else if (j == 2) { gravity += .01 * modifier; }
+                                    if (gravity < 0) { gravity = 0; }
+                                    texts[9]->setString(std::to_string(gravity));
+                                    eventtype == 10;
+                                }
                             }
+                            else if (i == 11) {
+                                // Adjusting The Number of Particles to Spawn
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) {
+                                        if (rainbow_mode) {
+                                            rainbow_mode = false;
+                                            UI_vectors[11][j].setFillColor(sf::Color(215, 215, 185));
+                                        }
+                                        else {
+                                            rainbow_mode = true;
+                                            UI_vectors[11][j].setFillColor(sf::Color(215, 215, 0));
+                                        }
+                                    }
+                                    eventtype == 11;
+                                }
                             }
                         }
                     }
@@ -568,16 +588,20 @@ int main()
                     // Placing particle
                     for (int i = 0; i < particle_amount; i++) {
                         sf::Vector2f position(mouse.x + 15 * i, mouse.y);
-                        // RAINBOW POWER!!!!!11!11!!
-                        sf::Color color = color_getter(red, green, blue, r_dir, g_dir, b_dir);
-                        //sf::Color color(red, green, blue);
+                        
+                        sf::Color color;
+                        if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
+                        else { color = sf::Color(red, green, blue); }
                         int grav_type = 1;
                         sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
 
-                        Particle* particle = new Particle(radius, position, color, grav_type, mass, velocity);
+                        Fire* particle = new Fire(radius, position, color, grav_type, mass, velocity);
                         particles.push_back(particle);
-                        std::cout << particles.size() << std::endl;
+                        std::cout << particles.size() << " : " << particle->type << std::endl;
                     }
+                    texts[0]->setString(std::to_string(red));
+                    texts[1]->setString(std::to_string(green));
+                    texts[2]->setString(std::to_string(blue));
                 }
             }
         }

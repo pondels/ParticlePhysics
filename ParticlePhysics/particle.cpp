@@ -11,17 +11,4 @@ Particle::Particle(float size, sf::Vector2f position, sf::Color color, int phys_
 	mass = particle_mass;
 	velocity = v;
 	radius = size;
-
-	type = gravity_type(phys_type);
-}
-
-std::string Particle::gravity_type(int phys_type) {
-	switch (phys_type) {
-		case 0: {
-			return "Space";
-		}
-		case 1: {
-			return "Normal";
-		}
-	}
 }
