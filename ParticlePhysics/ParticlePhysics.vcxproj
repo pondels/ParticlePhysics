@@ -153,12 +153,12 @@
   <ItemGroup>
     <ClCompile Include="particle.cpp" />
     <ClCompile Include="ParticlePhysics.cpp" />
-    <ClCompile Include="physics.cpp" />
+    <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="KDTree.h" />
     <ClInclude Include="particle.h" />
-    <ClInclude Include="physics.h" />
+    <ClInclude Include="UI.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

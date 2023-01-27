@@ -15,11 +15,3 @@ Particle::Particle(float size, sf::Vector2f position, sf::Color color, std::stri
 	temperature = temp;
 	viscosity = visc;
 }
-
-//class Water : public Particle {
-//public:
-//	std::string type = "water";
-//	float viscocity = 1; // Default water viscosity
-//
-//	using Particle::Particle;
-//};

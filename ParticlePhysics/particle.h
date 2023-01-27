@@ -1,6 +1,5 @@
 #pragma once
 #include <SFML/Graphics.hpp>
-#include "physics.h"
 
 #ifndef PARTICLE_H
 #define PARTICLE_H
