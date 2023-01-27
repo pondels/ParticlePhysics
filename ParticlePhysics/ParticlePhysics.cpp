@@ -128,6 +128,7 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
                     float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
                     if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
                         
+                        // Temperature transfers and then updates the colors
                         if (particle->type == "fire" && particles[i]->type == "fire") {
                             if (particle->temperature > particles[i]->temperature) {
                                 particle->temperature--;
@@ -242,11 +243,6 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
-//void custom_message(sf::Text* message, sf::Vector2f position) {
-//    message->setCharacterSize(15);
-//    message->setFillColor(sf::Color::Black);
-//    message->setPosition(position);
-//}
 void threaded_method(std::vector<Particle*> particles, float deltaTime, float gravity, int start, int end) {
     for (int iter = start; iter < end; iter++) {
         update_particle(particles, iter, deltaTime, gravity);
@@ -274,14 +270,12 @@ int main()
 
     std::string UI_render_type = "closed";
     UserInterface ui(windowsize);
-    //std::vector<std::vector<sf::RectangleShape>> UI_vectors = create_UI(window, UI_render_type);
     ui.create_UI(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature);
     std::vector<std::vector<sf::RectangleShape>> UI_vectors = ui.vectors;
 
     std::vector<Particle*> particles;
     std::vector<sf::Text*> texts = ui.texts;
-    /*sf::Font font;
-    if (!font.loadFromFile("C:\\WINDOWS\\FONTS\\ARIAL.TTF")) {}*/
+    sf::CircleShape *particle_preview = ui.particle_preview;
 
     std::vector<sf::Vector3f> positions;
     for (int i = 0; i < particles.size(); i++) {
@@ -290,42 +284,6 @@ int main()
 
     // For perforance crap
     //kdt::KDTree<sf::Vector3f> kdtree(positions);
-
-    /*sf::Text* velxstring =      new sf::Text(std::to_string(start_vel_x), font);
-    sf::Text* velystring =      new sf::Text(std::to_string(start_vel_y), font);
-    sf::Text* masstring =       new sf::Text(std::to_string(mass), font);
-    sf::Text* radiustring =     new sf::Text(std::to_string(radius), font);
-    sf::Text* modistring =      new sf::Text(std::to_string(modifier), font);
-    sf::Text* part_amt_string = new sf::Text(std::to_string(particle_amount), font);
-    sf::Text* red_string =      new sf::Text(std::to_string(red), font);
-    sf::Text* green_string =    new sf::Text(std::to_string(green), font);
-    sf::Text* blue_string =     new sf::Text(std::to_string(blue), font);
-    sf::Text* grav_string =     new sf::Text(std::to_string(gravity), font);
-    sf::Text* temp_string =     new sf::Text(std::to_string(temperature), font);
-
-    custom_message(velxstring,      convert_resolution(sf::Vector2f(1920 + 132, 265)));
-    custom_message(velystring,      convert_resolution(sf::Vector2f(1920 + 247, 265)));
-    custom_message(masstring,       convert_resolution(sf::Vector2f(1920 + 247, 205)));
-    custom_message(radiustring,     convert_resolution(sf::Vector2f(1920 + 132, 205)));
-    custom_message(modistring,      convert_resolution(sf::Vector2f(1920 + 247, 325)));
-    custom_message(part_amt_string, convert_resolution(sf::Vector2f(1920 + 132, 325)));
-    custom_message(red_string,      convert_resolution(sf::Vector2f(1920 + 75, 130)));
-    custom_message(green_string,    convert_resolution(sf::Vector2f(1920 + 190, 130)));
-    custom_message(blue_string,     convert_resolution(sf::Vector2f(1920 + 305, 130)));
-    custom_message(grav_string,     convert_resolution(sf::Vector2f(1920 + 190, 385)));
-    custom_message(temp_string,     convert_resolution(sf::Vector2f(1920 + 190, 465)));
-
-    texts.push_back(red_string);
-    texts.push_back(green_string);
-    texts.push_back(blue_string);
-    texts.push_back(radiustring);
-    texts.push_back(masstring);
-    texts.push_back(velxstring);
-    texts.push_back(velystring);
-    texts.push_back(part_amt_string);
-    texts.push_back(modistring);
-    texts.push_back(grav_string);
-    texts.push_back(temp_string);*/
 
     float deltaTime = 1.f/fps;
     float substeps = 8.f;
@@ -371,6 +329,8 @@ int main()
                                 sf::Vector2f pos = texts[object]->getPosition();
                                 texts[object]->setPosition(pos.x - convert_x(400), pos.y);
                             }
+                            sf::Vector2f pp_pos = particle_preview->getPosition();
+                            particle_preview->setPosition(pp_pos.x - convert_x(400), pp_pos.y);
                             eventtype = i;
                             break;
                         }
@@ -395,6 +355,8 @@ int main()
                                         sf::Vector2f pos = texts[object]->getPosition();
                                         texts[object]->setPosition(pos.x + convert_x(400), pos.y);
                                     }
+                                    sf::Vector2f pp_pos = particle_preview->getPosition();
+                                    particle_preview->setPosition(pp_pos.x + convert_x(400), pp_pos.y);
                                     eventtype = i;
                                     break;
                                 }
@@ -411,6 +373,7 @@ int main()
                                     else if (j == 2) { red += modifier; }
                                     if (red > 255) { red = 255; }
                                     if (red < 0) { red = 0; }
+                                    particle_preview->setFillColor(sf::Color(red, green, blue));
                                     texts[0]->setString(std::to_string(red));
                                     eventtype = 2;
                                 }
@@ -422,6 +385,7 @@ int main()
                                     else if (j == 2) { green += modifier; }
                                     if (green > 255) { green = 255; }
                                     if (green < 0) { green = 0; }
+                                    particle_preview->setFillColor(sf::Color(red, green, blue));
                                     texts[1]->setString(std::to_string(green));
                                     eventtype = 3;
                                 }
@@ -433,6 +397,7 @@ int main()
                                     else if (j == 2) { blue += modifier; }
                                     if (blue > 255) { blue = 255; }
                                     if (blue < 0) { blue = 0; }
+                                    particle_preview->setFillColor(sf::Color(red, green, blue));
                                     texts[2]->setString(std::to_string(blue));
                                     eventtype = 4;
                                 }
@@ -444,6 +409,8 @@ int main()
                                     else if (j == 2) { radius += modifier; }
                                     if (radius < 1) { radius = 1; }
                                     if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
+                                    particle_preview->setRadius(radius);
+                                    particle_preview->setPosition(convert_resolution(sf::Vector2f(1730 - radius, 70 - radius)));
                                     texts[3]->setString(std::to_string(radius));
                                     eventtype = 5;
                                 }
@@ -543,9 +510,14 @@ int main()
                         }
                         else {
                             color = fire_color_updater(temperature);
+                            red = color.r;
+                            blue = color.b;
+                            green = color.g;
                         }
                         sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
 
+                        // Updating the preview incase particles change colors willingly
+                        particle_preview->setFillColor(sf::Color(red, green, blue));
 
                         Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, 1);
                         particles.push_back(particle);
@@ -574,6 +546,7 @@ int main()
             for (int object = 0; object < UI_vectors.size(); object++) {
                 for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
                     window.draw(UI_vectors[object][rectangle]);
+                    if (object == 1 && rectangle == UI_vectors[object].size() - 1) window.draw(*particle_preview);
                 }
             }
 
@@ -584,6 +557,5 @@ int main()
         }
         window.display();
     }
-
     return 0;
 }

@@ -23,14 +23,17 @@ sf::RectangleShape UserInterface::make_bar(sf::Vector2f size, sf::Color color, s
     rectangle.setPosition(position);
     return rectangle;
 }
-
 void custom_message(sf::Text* message, sf::Vector2f position) {
     message->setCharacterSize(15);
     message->setFillColor(sf::Color::Black);
     message->setPosition(position);
 }
-
 void UserInterface::PictureDisplay() {
+
+    particle_preview->setRadius(5);
+    particle_preview->setFillColor(sf::Color(255, 0, 0));
+    particle_preview->setPosition(convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
+
     vectors.push_back(std::vector<sf::RectangleShape>()); // Open/Close Button               [0]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Main background display for UI  [1]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Red Color Channel               [2]

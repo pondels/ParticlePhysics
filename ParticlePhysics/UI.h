@@ -10,6 +10,7 @@ public:
 	sf::Vector2f windowsize;
 	std::vector<std::vector<sf::RectangleShape>> vectors;
 	std::vector<sf::Text*> texts;
+	sf::CircleShape* particle_preview = new sf::CircleShape;
 	sf::Font font;
 
 	UserInterface(sf::Vector2f);
