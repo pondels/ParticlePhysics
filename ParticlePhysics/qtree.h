@@ -22,29 +22,6 @@ public:
 	}
 };
 
-class CircleBB {
-public:
-	// Constructor
-	float x, y, r, rsquared;
-
-	CircleBB() = default;
-	CircleBB(sf::Vector2f pos, float radius) {
-		x = pos.x;
-		y = pos.y;
-		r = radius;
-		rsquared = radius * radius;
-	}
-
-	bool intersects(CircleBB range) {
-
-	}
-
-	bool contains(Point point) {
-		float d = pow((point.x - x), 2) + pow((point.y - y), 2);
-		return d <= rsquared;
-	}
-};
-
 class RectangleBB {
 public:
 	float x, y, w, h;
@@ -72,6 +49,44 @@ public:
 	bool intersects(RectangleBB range) {
 		return !(left <= range.left || range.right < left ||
 			bottom < range.top || range.bottom < top);
+	}
+};
+
+class CircleBB {
+public:
+	// Constructor
+	float x, y, r, rsquared;
+
+	CircleBB() = default;
+	CircleBB(sf::Vector2f pos, float radius) {
+		x = pos.x;
+		y = pos.y;
+		r = radius;
+		rsquared = radius * radius;
+	}
+
+	bool intersects(RectangleBB* range) {
+		float xDist = abs(range->x - x);
+		float yDist = abs(range->y - y);
+
+		float w = range->w / 2;
+		float h = range->h / 2;
+
+		float edges = pow((xDist - w), 2) + pow((yDist - h), 2);
+
+		// no intersection
+		if (xDist > (r + w) || yDist > (r + h)) return false;
+
+		// intersection within the circle
+		if (xDist <= w || yDist <= h) return true;
+
+		// intersection on the edge of the circle
+		return edges <= rsquared;
+	}
+
+	bool contains(Point point) {
+		float d = pow((point.x - x), 2) + pow((point.y - y), 2);
+		return d <= rsquared;
 	}
 };
 
@@ -131,13 +146,13 @@ public:
 	}
 
 	// Grab particles around another particle
-	std::vector<Point> queryRange(CircleBB range) {
+	std::vector<Point> queryRange(CircleBB* range) {
 		std::vector<Point> pointsInRange;
 
-		//if (!boundary->intersects(range)) return pointsInRange;
+		if (!range->intersects(boundary)) return pointsInRange;
 
 		for (int p = 0; p < points->size(); p++) {
-			if (range.contains(points->at(p))) pointsInRange.push_back(points->at(p));
+			if (range->contains(points->at(p))) pointsInRange.push_back(points->at(p));
 		}
 
 		if (!subdivided) return pointsInRange;

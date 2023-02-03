@@ -109,8 +109,12 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
 
     // Colliding with other particles neat it
 
-    CircleBB boundary(particle->particle->getPosition(), particle->radius);
+    CircleBB *boundary = new CircleBB(particle->particle->getPosition(), particle->radius);
     std::vector<Point> points = qt->queryRange(boundary);
+
+    if (index == 0) {
+        if (points.size() > 0) std::cout << points.size() << std::endl;
+    }
 
     //for (int i = 0; i < particles.size(); i++) {
     for (int i = 0; i < particles.size(); i++) {
@@ -249,21 +253,20 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
-void draw_qt(sf::RenderWindow* window, QuadTree* qt) {
-    sf::RectangleShape boundary(sf::Vector2f(qt->boundary->w * 2 - 6, qt->boundary->h * 2 - 6));
-    boundary.setOrigin(boundary.getGlobalBounds().width / 2, boundary.getGlobalBounds().height / 2);
-    boundary.setPosition(windowsize.x / 2, windowsize.y / 2);
-    boundary.setFillColor(sf::Color(0, 0, 0));
-    boundary.setOutlineColor(sf::Color(255, 0, 0));
-    boundary.setOutlineThickness(3);
-    window->draw(boundary);
-    if (qt->subdivided) {
-        if (qt->northWest != NULL) draw_qt(window, qt->northWest);
-        if (qt->northEast != NULL) draw_qt(window, qt->northEast);
-        if (qt->southWest != NULL) draw_qt(window, qt->southWest);
-        if (qt->southEast != NULL) draw_qt(window, qt->southEast);
-    }
-}
+//void draw_qt(sf::RenderWindow* window, QuadTree* qt) {
+//    sf::RectangleShape boundary(sf::Vector2f(qt->boundary->w * 2 - 6, qt->boundary->h * 2 - 6));
+//    boundary.setPosition(3, 3);
+//    boundary.setFillColor(sf::Color(0, 0, 0));
+//    boundary.setOutlineColor(sf::Color(255, 0, 0));
+//    boundary.setOutlineThickness(3);
+//    window->draw(boundary);
+//    if (qt->subdivided) {
+//        if (qt->northWest != NULL) draw_qt(window, qt->northWest);
+//        if (qt->northEast != NULL) draw_qt(window, qt->northEast);
+//        if (qt->southWest != NULL) draw_qt(window, qt->southWest);
+//        if (qt->southEast != NULL) draw_qt(window, qt->southEast);
+//    }
+//}
 int main()
 {
     int fps = 165;
@@ -292,11 +295,6 @@ int main()
     std::vector<Particle*> particles;
     std::vector<sf::Text*> texts = ui.texts;
     sf::CircleShape *particle_preview = ui.particle_preview;
-
-    /*std::vector<sf::Vector3f> positions;
-    for (int i = 0; i < particles.size(); i++) {
-        positions.push_back(sf::Vector3f(particles[i]->particle->getPosition().x, particles[i]->particle->getPosition().y, particles[i]->radius));
-    }*/
 
     float deltaTime = 1.f/fps;
     float substeps = 8.f;
@@ -547,7 +545,7 @@ int main()
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
             // Refactoring QuadTree
-            RectangleBB* bounds = new RectangleBB(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x/2), int(windowsize.y/2));
+            RectangleBB* bounds = new RectangleBB(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
             QuadTree *qt = new QuadTree(bounds, 4);
 
             // Adds particles to QuadTree
@@ -557,7 +555,7 @@ int main()
             }
 
             // Displays QuadTree Boxes
-            draw_qt(window, qt);
+            //draw_qt(window, qt);
 
             // Draws Particles
             for (int i = 0; i < particles.size(); i++) {
