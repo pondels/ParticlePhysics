@@ -17,6 +17,7 @@ public:
 	sf::Vector2f* velocity;
 	int viscosity;
 
+	Particle() = default;
 	Particle(float, sf::Vector2f, sf::Color, std::string, double, sf::Vector2f*, float, int);
 };
 

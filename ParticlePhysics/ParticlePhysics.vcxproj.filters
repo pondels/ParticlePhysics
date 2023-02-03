@@ -32,7 +32,7 @@
     <ClInclude Include="UI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KDTree.h">
+    <ClInclude Include="qtree.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

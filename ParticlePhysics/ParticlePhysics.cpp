@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <thread>
 #include "UI.h"
-#include "KDTree.h"
+#include "QTree.h"
 
 /*
 
@@ -14,6 +14,7 @@
 https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 https://chat.openai.com/chat
 https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
+https://en.wikipedia.org/wiki/Quadtree#:~:text=A%20quadtree%20is%20a%20tree,into%20four%20quadrants%20or%20regions.
 *****SOURCES*****
 
 */
@@ -71,7 +72,7 @@ bool horizontal_overlap(float x1, float x2, float r1, float r2) {
     if (abs(x1 - x2) - (r1 + r2) < 0) return true;
     return false;
 }
-void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index) {
+void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt) {
 
     // Update Direction & Speed of particle based on collisions.
 
@@ -106,7 +107,12 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
         particle->particle->setPosition(particlex, radius);
     }
 
-    // Colliding with other particles
+    // Colliding with other particles neat it
+
+    CircleBB boundary(particle->particle->getPosition(), particle->radius);
+    std::vector<Point> points = qt->queryRange(boundary);
+
+    //for (int i = 0; i < particles.size(); i++) {
     for (int i = 0; i < particles.size(); i++) {
         if (i != index) {
             float x1 = particles[i]->particle->getPosition().x;
@@ -188,9 +194,9 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void update_particle(std::vector<Particle*> particles, int index, float deltaTime, float gravity) {
+void update_particle(std::vector<Particle*> particles, int index, float deltaTime, float gravity, QuadTree* qt) {
     update_position(particles[index], particles[index]->particle, index, deltaTime, gravity);
-    check_collisions1(particles, particles[index], particles[index]->particle, index);
+    check_collisions1(particles, particles[index], particles[index]->particle, index, qt);
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
 
@@ -243,11 +249,6 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
-void threaded_method(std::vector<Particle*> particles, float deltaTime, float gravity, int start, int end) {
-    for (int iter = start; iter < end; iter++) {
-        update_particle(particles, iter, deltaTime, gravity);
-    }
-}
 int main()
 {
     int fps = 165;
@@ -281,9 +282,6 @@ int main()
     for (int i = 0; i < particles.size(); i++) {
         positions.push_back(sf::Vector3f(particles[i]->particle->getPosition().x, particles[i]->particle->getPosition().y, particles[i]->radius));
     }
-
-    // For perforance crap
-    //kdt::KDTree<sf::Vector3f> kdtree(positions);
 
     float deltaTime = 1.f/fps;
     float substeps = 8.f;
@@ -498,6 +496,7 @@ int main()
                 }
                 
                 if (eventtype == -1) {
+
                     // Placing particle
                     for (int i = 0; i < particle_amount; i++) {
                         sf::Vector2f position(mouse.x + 15 * i, mouse.y);
@@ -532,14 +531,31 @@ int main()
         window.clear();
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
+            // Refactoring QuadTree
+            RectangleBB* bounds = new RectangleBB(sf::Vector2f(0, 0), int(windowsize.x), int(windowsize.y));
+            QuadTree *qt = new QuadTree(bounds, 4);
+
             // Draws Pixels
             for (int i = 0; i < particles.size(); i++) {
                 window.draw(*particles.at(i)->particle);
+
+                // Adding particles to Quad tree pre-move
+                Point point(particles.at(i)->particle->getPosition(), particles.at(i));
+                qt->insert(point);
             }
 
-            // Applies Updates to pixels after drawing
+            //// Displays QuadTree Boxes
+            //while (true) {
+            //    sf::RectangleShape boundary(sf::Vector2f(qt->boundary->w, qt->boundary->h));
+            //    boundary.setFillColor(sf::Color(255, 0, 0));
+            //    //boundary.setOutlineColor(sf::Color(255, 0, 0));
+            //    window.draw(boundary);
+            //    break;
+            //}
+
+            // Applies Updates to particles after drawing
             for (int i = 0; i < particles.size(); i++) {
-                update_particle(particles, i, subdt, gravity);
+                update_particle(particles, i, subdt, gravity, qt);
             }
 
             // Draws the particle UI
