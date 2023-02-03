@@ -249,11 +249,26 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
+void draw_qt(sf::RenderWindow* window, QuadTree* qt) {
+    sf::RectangleShape boundary(sf::Vector2f(qt->boundary->w * 2 - 6, qt->boundary->h * 2 - 6));
+    boundary.setOrigin(boundary.getGlobalBounds().width / 2, boundary.getGlobalBounds().height / 2);
+    boundary.setPosition(windowsize.x / 2, windowsize.y / 2);
+    boundary.setFillColor(sf::Color(0, 0, 0));
+    boundary.setOutlineColor(sf::Color(255, 0, 0));
+    boundary.setOutlineThickness(3);
+    window->draw(boundary);
+    if (qt->subdivided) {
+        if (qt->northWest != NULL) draw_qt(window, qt->northWest);
+        if (qt->northEast != NULL) draw_qt(window, qt->northEast);
+        if (qt->southWest != NULL) draw_qt(window, qt->southWest);
+        if (qt->southEast != NULL) draw_qt(window, qt->southEast);
+    }
+}
 int main()
 {
     int fps = 165;
-    sf::RenderWindow window(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
-    window.setFramerateLimit(fps);
+    sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
+    window->setFramerateLimit(fps);
 
     // Standard particle features
     int start_vel_x = 0;
@@ -278,10 +293,10 @@ int main()
     std::vector<sf::Text*> texts = ui.texts;
     sf::CircleShape *particle_preview = ui.particle_preview;
 
-    std::vector<sf::Vector3f> positions;
+    /*std::vector<sf::Vector3f> positions;
     for (int i = 0; i < particles.size(); i++) {
         positions.push_back(sf::Vector3f(particles[i]->particle->getPosition().x, particles[i]->particle->getPosition().y, particles[i]->radius));
-    }
+    }*/
 
     float deltaTime = 1.f/fps;
     float substeps = 8.f;
@@ -291,22 +306,22 @@ int main()
     bool b_dir = false;
     int thread_num = 4;
 
-    while (window.isOpen())
+    while (window->isOpen())
     {
         sf::Event event;
-        while (window.pollEvent(event)) 
+        while (window->pollEvent(event)) 
         {
             if (event.type == sf::Event::KeyPressed)
             {
                 if (event.key.code == sf::Keyboard::Escape) {
-                    window.close();
+                    window->close();
                 }
                 else if (event.key.code == sf::Keyboard::Delete) {
                     particles.clear();
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2i mouse = sf::Mouse::getPosition(window);
+                sf::Vector2i mouse = sf::Mouse::getPosition(*window);
                 
                 int eventtype = -1;
                 if (UI_render_type == "closed") {
@@ -528,30 +543,26 @@ int main()
             }
         }
 
-        window.clear();
+        window->clear();
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
             // Refactoring QuadTree
-            RectangleBB* bounds = new RectangleBB(sf::Vector2f(0, 0), int(windowsize.x), int(windowsize.y));
+            RectangleBB* bounds = new RectangleBB(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x/2), int(windowsize.y/2));
             QuadTree *qt = new QuadTree(bounds, 4);
 
-            // Draws Pixels
+            // Adds particles to QuadTree
             for (int i = 0; i < particles.size(); i++) {
-                window.draw(*particles.at(i)->particle);
-
-                // Adding particles to Quad tree pre-move
                 Point point(particles.at(i)->particle->getPosition(), particles.at(i));
                 qt->insert(point);
             }
 
-            //// Displays QuadTree Boxes
-            //while (true) {
-            //    sf::RectangleShape boundary(sf::Vector2f(qt->boundary->w, qt->boundary->h));
-            //    boundary.setFillColor(sf::Color(255, 0, 0));
-            //    //boundary.setOutlineColor(sf::Color(255, 0, 0));
-            //    window.draw(boundary);
-            //    break;
-            //}
+            // Displays QuadTree Boxes
+            draw_qt(window, qt);
+
+            // Draws Particles
+            for (int i = 0; i < particles.size(); i++) {
+                window->draw(*particles.at(i)->particle);
+            }
 
             // Applies Updates to particles after drawing
             for (int i = 0; i < particles.size(); i++) {
@@ -561,17 +572,17 @@ int main()
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {
                 for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                    window.draw(UI_vectors[object][rectangle]);
-                    if (object == 1 && rectangle == UI_vectors[object].size() - 1) window.draw(*particle_preview);
+                    window->draw(UI_vectors[object][rectangle]);
+                    if (object == 1 && rectangle == UI_vectors[object].size() - 1) window->draw(*particle_preview);
                 }
             }
 
             // Draws the text on top of UI
             for (int text = 0; text < texts.size(); text++) {
-                window.draw(*texts.at(text));
+                window->draw(*texts.at(text));
             }
         }
-        window.display();
+        window->display();
     }
     return 0;
 }

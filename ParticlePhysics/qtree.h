@@ -79,14 +79,14 @@ class QuadTree {
 public:
 	RectangleBB* boundary;
 	int capacity;
-	std::vector<Point> points;
+	std::vector<Point>* points = new std::vector<Point>;
 	bool subdivided = false;
 
 	// Children containing more particles
-	QuadTree* northWest;
-	QuadTree* northEast;
-	QuadTree* southWest;
-	QuadTree* southEast;
+	QuadTree* northWest = NULL;
+	QuadTree* northEast = NULL;
+	QuadTree* southWest = NULL;
+	QuadTree* southEast = NULL;
 
 	// Constructor
 	QuadTree(RectangleBB* bounds, int cap) {
@@ -100,8 +100,8 @@ public:
 		if (!boundary->contains(point)) return false;
 
 		// Hasn't reached capacity yet
-		if (points.size() < capacity) {
-			points.push_back(point);
+		if (points->size() < capacity && !subdivided) {
+			points->push_back(point);
 			return true;
 		}
 
@@ -114,29 +114,30 @@ public:
 	}
 
 	void subdivide() {
-		subdivided = true;
 		float x = boundary->x;
 		float y = boundary->y;
 		float w = boundary->w;
 		float h = boundary->h;
 
-		RectangleBB* NW = new RectangleBB(sf::Vector2f(x - w / 2, y - h / 2), w / 2, h / 2);
 		RectangleBB* NE = new RectangleBB(sf::Vector2f(x + w / 2, y - h / 2), w / 2, h / 2);
-		RectangleBB* SW = new RectangleBB(sf::Vector2f(x - w / 2, y + h / 2), w / 2, h / 2);
+		RectangleBB* NW = new RectangleBB(sf::Vector2f(x - w / 2, y - h / 2), w / 2, h / 2);
 		RectangleBB* SE = new RectangleBB(sf::Vector2f(x + w / 2, y + h / 2), w / 2, h / 2);
+		RectangleBB* SW = new RectangleBB(sf::Vector2f(x - w / 2, y + h / 2), w / 2, h / 2);
 		northWest = new QuadTree(NW, 4);
 		northEast = new QuadTree(NE, 4);
 		southWest = new QuadTree(SW, 4);
 		southEast = new QuadTree(SE, 4);
+		subdivided = true;
 	}
 
+	// Grab particles around another particle
 	std::vector<Point> queryRange(CircleBB range) {
 		std::vector<Point> pointsInRange;
 
-		// if (!boundary->intersects(range)) return pointsInRange;
+		//if (!boundary->intersects(range)) return pointsInRange;
 
-		for (int p = 0; p < points.size(); p++) {
-			if (range.contains(points[p])) pointsInRange.push_back(points[p]);
+		for (int p = 0; p < points->size(); p++) {
+			if (range.contains(points->at(p))) pointsInRange.push_back(points->at(p));
 		}
 
 		if (!subdivided) return pointsInRange;
