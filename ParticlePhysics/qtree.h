@@ -1,92 +1,66 @@
 #ifndef __QTREE_H__
 #define __QTREE_H__
 
-#include <SFML/Graphics.hpp>
-#include <vector>
-#include <numeric>
-#include <algorithm>
-#include <exception>
-#include <functional>
-
 // BB = Bounding Box
 
 class Point {
 public:
 	float x, y;
 	Particle* particle;
+	int index;
 
-	Point(sf::Vector2f pos, Particle* p) {
+	Point(sf::Vector2f pos, Particle*& p, int i) {
 		x = pos.x;
 		y = pos.y;
 		particle = p;
+		index = i;
 	}
 };
+
+//class CircleBB {
+//public:
+//	// Constructor
+//	float x, y, r, rsquared;
+//
+//	CircleBB() = default;
+//	CircleBB(sf::Vector2f pos, float radius) {
+//		x = pos.x;
+//		y = pos.y;
+//		r = radius;
+//		rsquared = radius * radius;
+//	}
+//
+//	bool contains(Point* point) {
+//		float d = pow((point->x - x), 2) + pow((point->y - y), 2);
+//		return d <= rsquared;
+//	}
+//};
 
 class RectangleBB {
 public:
 	float x, y, w, h;
 	float left, right, top, bottom;
+
 	// Constructor
 	RectangleBB(sf::Vector2f pos, int width, int height) {
 		x = pos.x;
 		y = pos.y;
 		w = width;
 		h = height;
-
-		left = x - w / 2;
-		right = x + w / 2;
-		top = y - h / 2;
-		bottom = y + h / 2;
 	}
 
-	bool contains(Point point) {
-		return (point.x > x - w &&
-			point.x < x + w &&
-			point.y > y - h &&
-			point.y < y + h);
-	}
-
-	bool intersects(RectangleBB range) {
-		return !(left <= range.left || range.right < left ||
-			bottom < range.top || range.bottom < top);
-	}
-};
-
-class CircleBB {
-public:
-	// Constructor
-	float x, y, r, rsquared;
-
-	CircleBB() = default;
-	CircleBB(sf::Vector2f pos, float radius) {
-		x = pos.x;
-		y = pos.y;
-		r = radius;
-		rsquared = radius * radius;
+	bool contains(Point* point) {
+		return (point->x >= x - w &&
+			point->x <= x + w &&
+			point->y >= y - h &&
+			point->y <= y + h);
 	}
 
 	bool intersects(RectangleBB* range) {
-		float xDist = abs(range->x - x);
-		float yDist = abs(range->y - y);
-
-		float w = range->w / 2;
-		float h = range->h / 2;
-
-		float edges = pow((xDist - w), 2) + pow((yDist - h), 2);
-
-		// no intersection
-		if (xDist > (r + w) || yDist > (r + h)) return false;
-
-		// intersection within the circle
-		if (xDist <= w || yDist <= h) return true;
-
-		// intersection on the edge of the circle
-		return edges <= rsquared;
-	}
-
-	bool contains(Point point) {
-		float d = pow((point.x - x), 2) + pow((point.y - y), 2);
-		return d <= rsquared;
+		return !(range->x - range->w > x + w ||
+				 range->x + range->w < x - w ||
+				 range->y - range->h > y + h ||
+				 range->y + range->h < y - h);
 	}
 };
 
@@ -94,7 +68,7 @@ class QuadTree {
 public:
 	RectangleBB* boundary;
 	int capacity;
-	std::vector<Point>* points = new std::vector<Point>;
+	std::vector<Point*>* points = new std::vector<Point*>;
 	bool subdivided = false;
 
 	// Children containing more particles
@@ -109,7 +83,7 @@ public:
 		capacity = cap;
 	}
 
-	bool insert(Point point) {
+	bool insert(Point* point) {
 
 		// Points don't belong in the tree
 		if (!boundary->contains(point)) return false;
@@ -146,27 +120,26 @@ public:
 	}
 
 	// Grab particles around another particle
-	std::vector<Point> queryRange(CircleBB* range) {
-		std::vector<Point> pointsInRange;
+	std::vector<Point*>* queryRange(RectangleBB* range) {
+		std::vector<Point*>* pointsInRange = new std::vector<Point*>;
 
-		if (!range->intersects(boundary)) return pointsInRange;
+		if (!boundary->intersects(range)) return pointsInRange;
 
 		for (int p = 0; p < points->size(); p++) {
-			if (range->contains(points->at(p))) pointsInRange.push_back(points->at(p));
+			if (range->contains(points->at(p))) pointsInRange->push_back(points->at(p));
 		}
 
 		if (!subdivided) return pointsInRange;
 
-		std::vector<Point> NWP = northWest->queryRange(range);
-		std::vector<Point> NEP = northWest->queryRange(range);
-		std::vector<Point> SWP = northWest->queryRange(range);
-		std::vector<Point> SEP = northWest->queryRange(range);
-		
-		pointsInRange.reserve(NWP.size() + NEP.size() + SWP.size() + SEP.size());
-		pointsInRange.insert(pointsInRange.end(), NWP.begin(), NWP.end());
-		pointsInRange.insert(pointsInRange.end(), NEP.begin(), NEP.end());
-		pointsInRange.insert(pointsInRange.end(), SWP.begin(), SWP.end());
-		pointsInRange.insert(pointsInRange.end(), SEP.begin(), SEP.end());
+		std::vector<Point*>* NWP = northWest->queryRange(range);
+		std::vector<Point*>* NEP = northEast->queryRange(range);
+		std::vector<Point*>* SWP = southWest->queryRange(range);
+		std::vector<Point*>* SEP = southEast->queryRange(range);
+
+		for (int i = 0; i < NWP->size(); i++) pointsInRange->push_back(NWP->at(i));
+		for (int i = 0; i < NEP->size(); i++) pointsInRange->push_back(NEP->at(i));
+		for (int i = 0; i < SWP->size(); i++) pointsInRange->push_back(SWP->at(i));
+		for (int i = 0; i < SEP->size(); i++) pointsInRange->push_back(SEP->at(i));
 
 		return pointsInRange;
 	}
