@@ -133,10 +133,6 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
                 float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
                 if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
 
-                    particle->particle->setFillColor(sf::Color(255, 255, 255));
-                    points->at(i)->particle->particle->setFillColor(sf::Color(255, 255, 255));
-                    //std::cout << "colliding" << std::endl;
-
                     // Temperature transfers and then updates the colors
                     if (particle->type == "fire" && points->at(i)->particle->type == "fire") {
                         if (particle->temperature > points->at(i)->particle->temperature) {
@@ -250,32 +246,6 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
 bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
-}
-//void draw_qt(sf::RenderWindow* window, QuadTree* qt) {
-//    sf::RectangleShape boundary(sf::Vector2f(qt->boundary->w * 2 - 6, qt->boundary->h * 2 - 6));
-//    boundary.setPosition(3, 3);
-//    boundary.setFillColor(sf::Color(0, 0, 0));
-//    boundary.setOutlineColor(sf::Color(255, 0, 0));
-//    boundary.setOutlineThickness(3);
-//    window->draw(boundary);
-//    if (qt->subdivided) {
-//        if (qt->northWest != NULL) draw_qt(window, qt->northWest);
-//        if (qt->northEast != NULL) draw_qt(window, qt->northEast);
-//        if (qt->southWest != NULL) draw_qt(window, qt->southWest);
-//        if (qt->southEast != NULL) draw_qt(window, qt->southEast);
-//    }
-//}
-void draw_particles(sf::RenderWindow* window, QuadTree* qt) {
-    for (int i = 0; i < qt->points->size(); i++) {
-        window->draw(*qt->points->at(i)->particle->particle);
-
-        if (qt->subdivided) {
-            draw_particles(window, qt->northWest);
-            draw_particles(window, qt->northEast);
-            draw_particles(window, qt->southWest);
-            draw_particles(window, qt->southEast);
-        }
-    }
 }
 int main()
 {
@@ -561,8 +531,8 @@ int main()
             // Adds particles to QuadTree
             for (int i = 0; i < particles.size(); i++) {
                 sf::Vector2f pos = particles[i]->particle->getPosition();
-                pos.x += radius;
-                pos.y += radius;
+                //pos.x += radius;
+                //pos.y += radius;
                 Point* point = new Point(pos, particles[i], i);
                 qt->insert(point);
             }
@@ -571,11 +541,9 @@ int main()
             //draw_qt(window, qt);
 
             // Draws Particles
-            /*for (int i = 0; i < particles.size(); i++) {
+            for (int i = 0; i < particles.size(); i++) {
                 window->draw(*particles.at(i)->particle);
-            }*/
-
-            draw_particles(window, qt);
+            }
 
             // Applies Updates to particles after drawing
             for (int i = 0; i < particles.size(); i++) {
