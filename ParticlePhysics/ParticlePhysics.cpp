@@ -109,75 +109,82 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
 
     // Colliding with other particles neat it
 
-    RectangleBB* boundary = new RectangleBB(particle->particle->getPosition(), radius * 2, radius * 2);
-    std::vector<Point*>* points = qt->queryRange(boundary);
+    RectangleBB boundary(particle->particle->getPosition(), radius * 2, radius * 2);
+    std::vector<Point> points;
+    qt->queryRange(boundary, &points);
 
-    //for (int i = 0; i < particles.size(); i++) {
-    for (int i = 0; i < points->size(); i++) {
-        float x1 = points->at(i)->particle->particle->getPosition().x;
-        float y1 = points->at(i)->particle->particle->getPosition().y;
-        float r1 = points->at(i)->particle->radius;
-        double m1 = points->at(i)->particle->mass;
-        sf::Vector2f* v1 = points->at(i)->particle->velocity;
+    if (points.size() > 20) std::cout << points.size() << std::endl;
 
-        float x2 = shape->getPosition().x;
-        float y2 = shape->getPosition().y;
-        float r2 = particle->radius;
-        double m2 = particle->mass;
-        sf::Vector2f* v2 = particle->velocity;
+    float x2 = shape->getPosition().x;
+    float y2 = shape->getPosition().y;
+    float r2 = particle->radius;
+    double m2 = particle->mass;
+    sf::Vector2f* v2 = particle->velocity;
 
-        bool ho = horizontal_overlap(x1, x2, r1, r2);
-        if (ho) {
-            bool vo = vertical_overlap(y1, y2, r1, r2);
-            if (vo) {
-                float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-                if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
+    for (int i = 0; i < points.size(); i++) {
+        int p_i = points.at(i).index;
 
-                    // Temperature transfers and then updates the colors
-                    if (particle->type == "fire" && points->at(i)->particle->type == "fire") {
-                        if (particle->temperature > points->at(i)->particle->temperature) {
-                            particle->temperature--;
-                            points->at(i)->particle->temperature++;
-                            sf::Color first_color = fire_color_updater(particle->temperature);
-                            sf::Color second_color = fire_color_updater(points->at(i)->particle->temperature);
-                            particle->particle->setFillColor(first_color);
-                            points->at(i)->particle->particle->setFillColor(second_color);
+        if (p_i != index) {
+
+            float x1 = particles[p_i]->particle->getPosition().x;
+            float y1 = particles[p_i]->particle->getPosition().y;
+            float r1 = particles[p_i]->radius;
+            double m1 = particles[p_i]->mass;
+            sf::Vector2f* v1 = particles[p_i]->velocity;
+
+            bool ho = horizontal_overlap(x1, x2, r1, r2);
+            if (ho) {
+                bool vo = vertical_overlap(y1, y2, r1, r2);
+                if (vo) {
+                    float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+                    if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
+
+                        // Temperature transfers and then updates the colors
+                        if (particle->type == "fire" && particles[p_i]->type == "fire") {
+                            if (particle->temperature > particles[p_i]->temperature) {
+                                particle->temperature--;
+                                particles[p_i]->temperature++;
+                                sf::Color first_color = fire_color_updater(particle->temperature);
+                                sf::Color second_color = fire_color_updater(particles[p_i]->temperature);
+                                particle->particle->setFillColor(first_color);
+                                particles[p_i]->particle->setFillColor(second_color);
+                            }
+                            else if (particle->temperature < particles[p_i]->temperature) {
+                                particle->temperature++;
+                                particles[p_i]->temperature--;
+                                sf::Color first_color = fire_color_updater(particle->temperature);
+                                sf::Color second_color = fire_color_updater(particles[p_i]->temperature);
+                                particle->particle->setFillColor(first_color);
+                                particles[p_i]->particle->setFillColor(second_color);
+                            }
                         }
-                        else if (particle->temperature < points->at(i)->particle->temperature) {
-                            particle->temperature++;
-                            points->at(i)->particle->temperature--;
-                            sf::Color first_color = fire_color_updater(particle->temperature);
-                            sf::Color second_color = fire_color_updater(points->at(i)->particle->temperature);
-                            particle->particle->setFillColor(first_color);
-                            points->at(i)->particle->particle->setFillColor(second_color);
+
+                        float distance = sqrtf(squaredistance);
+                        float overlap = (distance - r1 - r2) / 2.f;
+
+                        // If inside a particle, break out
+                        float moveX = (overlap * (x1 - x2) / distance);
+                        float moveY = (overlap * (y1 - y2) / distance);
+
+                        particles[p_i]->particle->setPosition(x1 - moveX, y1 - moveY);
+                        particle->particle->setPosition(x2 + moveX, y2 + moveY);
+
+                        sf::Vector2f vCollision(x2 - x1, y2 - y1);
+                        sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
+                        sf::Vector2f vRelativeVelocity(v1->x - v2->x, v1->y - v2->y);
+                        float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
+                        if (speed < 0) {
+                            break;
                         }
+
+                        speed *= restitution;
+                        float impulse = float((2 * speed) / (m1 + m2));
+
+                        v1->x -= impulse * m2 * vCollisionNorm.x;
+                        v1->y -= impulse * m2 * vCollisionNorm.y;
+                        v2->x += impulse * m1 * vCollisionNorm.x;
+                        v2->y += impulse * m1 * vCollisionNorm.y;
                     }
-
-                    float distance = sqrtf(squaredistance);
-                    float overlap = (distance - r1 - r2) / 2.f;
-
-                    // If inside a particle, break out
-                    float moveX = (overlap * (x1 - x2) / distance);
-                    float moveY = (overlap * (y1 - y2) / distance);
-
-                    points->at(i)->particle->particle->setPosition(x1 - moveX, y1 - moveY);
-                    particle->particle->setPosition(x2 + moveX, y2 + moveY);
-
-                    sf::Vector2f vCollision(x2 - x1, y2 - y1);
-                    sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
-                    sf::Vector2f vRelativeVelocity(v1->x - v2->x, v1->y - v2->y);
-                    float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
-                    if (speed < 0) {
-                        break;
-                    }
-
-                    speed *= restitution;
-                    float impulse = float((2 * speed) / (m1 + m2));
-
-                    v1->x -= impulse * m2 * vCollisionNorm.x;
-                    v1->y -= impulse * m2 * vCollisionNorm.y;
-                    v2->x += impulse * m1 * vCollisionNorm.x;
-                    v2->y += impulse * m1 * vCollisionNorm.y;
                 }
             }
         }
@@ -247,6 +254,28 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
+void draw_qt(sf::RenderWindow* window, QuadTree* qt) {
+    
+    // Box is center aligned. Set its position to the center minux its width and height; Recursively call this method
+
+    float x = qt->boundary.x;
+    float y = qt->boundary.y;
+    float w = qt->boundary.w;
+    float h = qt->boundary.h;
+
+    sf::RectangleShape bounding_box(sf::Vector2f(w * 2, h * 2));
+    bounding_box.setFillColor(sf::Color(0, 0, 0));
+    bounding_box.setOutlineColor(sf::Color(255, 0, 0));
+    bounding_box.setOutlineThickness(3);
+    bounding_box.setPosition(x - w, y - h);
+    window->draw(bounding_box);
+    if (qt->subdivided) {
+        draw_qt(window, qt->northWest);
+        draw_qt(window, qt->northEast);
+        draw_qt(window, qt->southWest);
+        draw_qt(window, qt->southEast);
+    }
+}
 int main()
 {
     int fps = 165;
@@ -295,6 +324,9 @@ int main()
                     window->close();
                 }
                 else if (event.key.code == sf::Keyboard::Delete) {
+                    for (int i = 0; i < particles.size(); i++) {
+                        delete particles[i];
+                    }
                     particles.clear();
                 }
             }
@@ -506,7 +538,7 @@ int main()
                             blue = color.b;
                             green = color.g;
                         }
-                        sf::Vector2f* velocity = new sf::Vector2f(start_vel_x, start_vel_y);
+                        sf::Vector2f velocity(start_vel_x, start_vel_y);
 
                         // Updating the preview incase particles change colors willingly
                         particle_preview->setFillColor(sf::Color(red, green, blue));
@@ -525,15 +557,13 @@ int main()
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
             // Refactoring QuadTree
-            RectangleBB* bounds = new RectangleBB(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+            RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
             QuadTree *qt = new QuadTree(bounds, 4);
 
             // Adds particles to QuadTree
             for (int i = 0; i < particles.size(); i++) {
                 sf::Vector2f pos = particles[i]->particle->getPosition();
-                //pos.x += radius;
-                //pos.y += radius;
-                Point* point = new Point(pos, particles[i], i);
+                Point point(pos, i);
                 qt->insert(point);
             }
 
@@ -562,6 +592,8 @@ int main()
             for (int text = 0; text < texts.size(); text++) {
                 window->draw(*texts.at(text));
             }
+
+            delete qt;
         }
         window->display();
     }

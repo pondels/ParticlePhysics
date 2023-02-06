@@ -151,7 +151,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="particle.cpp" />
     <ClCompile Include="ParticlePhysics.cpp" />
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
