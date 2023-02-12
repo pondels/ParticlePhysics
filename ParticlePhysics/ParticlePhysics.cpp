@@ -20,8 +20,38 @@ https://www.geeksforgeeks.org/2d-vector-in-cpp-with-user-defined-size/
 
 */
 
+/* 
+
+#include <iostream>
+#include <SFML/Graphics.hpp>
+#include "particle.h"
+#include <cmath>
+#include <sstream>
+#include <algorithm>
+#include <thread>
+#include "UI.h"
+#include "UI.cpp"
+#include "qtree.h"
+
+/*
+
+*****SOURCES*****
+https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
+https://chat.openai.com/chat
+https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
+https://en.wikipedia.org/wiki/Quadtree#:~:text=A%20quadtree%20is%20a%20tree,into%20four%20quadrants%20or%20regions.
+https://www.geeksforgeeks.org/2d-vector-in-cpp-with-user-defined-size/
+*****SOURCES*****
+
+*/
+
+            // Updates particles positions and collisions
+            //update_particles(particles, subdt, gravity, qt);
+
+
 // Tracks the biggest radius on screen
 int biggest_radius = 0;
+const float grav_const = 6.6743 * pow(10, -6);
 
 sf::Vector2f windowsize(1280, 720);
 float dot(sf::Vector2f a, sf::Vector2f b) {
@@ -193,7 +223,7 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
     }
 }
 void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity, QuadTree* qt) {
-    
+
     // Move particle so far along the given path.
     float x = shape->getPosition().x;
     float y = shape->getPosition().y;
@@ -201,9 +231,58 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void update_particle(std::vector<Particle*> particles, int index, float deltaTime, float gravity, QuadTree* qt) {
-    update_position(particles[index], particles[index]->particle, index, deltaTime, gravity, qt);
-    check_collisions1(particles, particles[index], particles[index]->particle, index, qt);
+void space_update_position(std::vector<Particle*> particles, float deltaTime) {
+
+    std::vector<std::tuple<float, float>> transformations;
+
+    for (int i = 0; i < particles.size(); i++) {
+        
+        Particle* main_particle = particles[i];
+        sf::Vector2f main_pos = main_particle->particle->getPosition();
+
+        float x_shift = 0;
+        float y_shift = 0;
+
+        for (int j = 0; j < particles.size(); j++) {
+            Particle* temp_particle = particles[j];
+            sf::Vector2f temp_pos = temp_particle->particle->getPosition();
+
+            // Particle can't move towards itself
+            if (i != j && main_pos.x != temp_pos.x && main_pos.y != temp_pos.y) {
+
+                auto distance = std::sqrt((temp_pos.x - main_pos.x) * (temp_pos.x - main_pos.x) + (temp_pos.y - main_pos.y) * (temp_pos.y - main_pos.y));
+                auto force = main_particle->mass * temp_particle->mass / (distance * distance);
+
+                float fx = force * (temp_pos.x - main_pos.x) / abs(distance);
+                float fy = force * (temp_pos.y - main_pos.y) / abs(distance);
+                x_shift += fx;
+                y_shift += fy;
+            }
+        }
+        transformations.push_back(std::tuple<float, float>(x_shift, y_shift));
+    }
+
+    // Updates the particles with their respective x and y shift
+    for (int i = 0; i < particles.size(); i++) {
+        sf::Vector2f pos = particles[i]->particle->getPosition();
+        particles[i]->velocity->x += deltaTime * std::get<0>(transformations[i]);
+        particles[i]->velocity->y += deltaTime * std::get<1>(transformations[i]);
+        particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
+    }
+}
+void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* qt) {
+    if (gravity != 0) {
+        for (int i = 0; i < particles.size(); i++) {
+            update_position(particles[i], particles[i]->particle, i, deltaTime, gravity, qt);
+            check_collisions1(particles, particles[i], particles[i]->particle, i, qt);
+        }
+    }
+    else {
+        space_update_position(particles, deltaTime);
+        for (int i = 0; i < particles.size(); i++) {
+            check_collisions1(particles, particles[i], particles[i]->particle, i, qt);
+        }
+    }
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
 
@@ -256,10 +335,9 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
-
 int main()
 {
-    int fps = 165;
+    int fps = 1000;
     sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
     window->setFramerateLimit(fps);
 
@@ -273,7 +351,7 @@ int main()
     int red = 255;
     int green = 0;
     int blue = 0;
-    float gravity = 9.81f;
+    float gravity = 0.f;
     int temperature = 15;
     bool rainbow_mode = false;
 
@@ -521,7 +599,7 @@ int main()
                     // Placing particle
                     for (int i = 0; i < particle_amount; i++) {
 
-                        sf::Vector2f position(mouse.x, mouse.y);
+                        sf::Vector2f position(mouse.x + i, mouse.y + i);
 
                         sf::Color color;
                         std::string type = "fire";
@@ -574,14 +652,11 @@ int main()
             }
 
             // Applies Updates to particles after drawing
-            for (int i = 0; i < particles.size(); i++) {
+            /*for (int i = 0; i < particles.size(); i++) {
                 update_particle(particles, i, subdt, gravity, qt);
-            }
+            }*/
 
-            //// Update particle positions
-            //for (int i = 0; i < particles.size(); i++) {
-            //    update_position(particles[i], particles[i]->particle, i, subdt, gravity);
-            //}
+            update_particles(particles, subdt, gravity, qt);
 
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {
