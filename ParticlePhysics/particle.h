@@ -20,7 +20,7 @@ public:
 	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, int visc) {
 		particle = new sf::CircleShape(size);
 		particle->setPosition(position);
-		particle->setOrigin(particle->getGlobalBounds().width / 2, particle->getGlobalBounds().height / 2);
+		particle->setOrigin(size, size);
 		particle->setFillColor(color);
 
 		static const int DIM = 2;

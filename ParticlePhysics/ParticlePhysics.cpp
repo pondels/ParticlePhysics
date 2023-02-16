@@ -41,13 +41,10 @@ https://chat.openai.com/chat
 https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
 https://en.wikipedia.org/wiki/Quadtree#:~:text=A%20quadtree%20is%20a%20tree,into%20four%20quadrants%20or%20regions.
 https://www.geeksforgeeks.org/2d-vector-in-cpp-with-user-defined-size/
+http://arborjs.org/docs/barnes-hut
 *****SOURCES*****
 
 */
-
-            // Updates particles positions and collisions
-            //update_particles(particles, subdt, gravity, qt);
-
 
 // Tracks the biggest radius on screen
 int biggest_radius = 0;
@@ -231,7 +228,7 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void space_update_position(std::vector<Particle*> particles, float deltaTime) {
+void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut *space_qt) {
 
     std::vector<std::tuple<float, float>> transformations;
     const float softener = .1f;
@@ -273,17 +270,17 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime) {
         particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
     }
 }
-void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* qt) {
+void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt) {
     if (gravity != 0) {
         for (int i = 0; i < particles.size(); i++) {
-            update_position(particles[i], particles[i]->particle, i, deltaTime, gravity, qt);
-            check_collisions1(particles, particles[i], particles[i]->particle, i, qt);
+            update_position(particles[i], particles[i]->particle, i, deltaTime, gravity, collisions_qt);
+            check_collisions1(particles, particles[i], particles[i]->particle, i, collisions_qt);
         }
     }
     else {
-        space_update_position(particles, deltaTime);
+        space_update_position(particles, deltaTime, space_qt);
         for (int i = 0; i < particles.size(); i++) {
-            check_collisions1(particles, particles[i], particles[i]->particle, i, qt);
+            check_collisions1(particles, particles[i], particles[i]->particle, i, collisions_qt);
         }
     }
 }
@@ -377,6 +374,9 @@ int main()
     bool r_dir = false;
     bool g_dir = true;
     bool b_dir = false;
+
+    // Boundary to the quadtrees
+    /*RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));*/
 
     while (window->isOpen())
     {
@@ -636,15 +636,18 @@ int main()
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
 
-            // Refactoring QuadTree
-            RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
-            QuadTree *qt = new QuadTree(bounds, 4);
+            // Refactoring QuadTrees
+            RectangleBB col_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+            RectangleBB spa_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+            QuadTree *collisions_qt = new QuadTree(col_bounds, 1);
+            Barnes_Hut *space_qt = new Barnes_Hut(spa_bounds, 1);
 
             // Adds particles to QuadTree
             for (int i = 0; i < particles.size(); i++) {
                 sf::Vector2f pos = particles[i]->particle->getPosition();
-                Point point(pos, i);
-                qt->insert(point);
+                Point point(pos, i, particles[i]->mass);
+                collisions_qt->insert(point);
+                //if (gravity == 0) space_qt->insert(point);
             }
 
             if (display_particles) {
@@ -654,12 +657,7 @@ int main()
                 }
             }
 
-            // Applies Updates to particles after drawing
-            /*for (int i = 0; i < particles.size(); i++) {
-                update_particle(particles, i, subdt, gravity, qt);
-            }*/
-
-            update_particles(particles, subdt, gravity, qt);
+            update_particles(particles, subdt, gravity, collisions_qt, space_qt);
 
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {
@@ -674,7 +672,8 @@ int main()
                 window->draw(*texts.at(text));
             }
 
-            delete qt;
+            delete collisions_qt;
+            delete space_qt;
         }
         window->display();
     }
