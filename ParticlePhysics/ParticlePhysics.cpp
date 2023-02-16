@@ -234,6 +234,8 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
 void space_update_position(std::vector<Particle*> particles, float deltaTime) {
 
     std::vector<std::tuple<float, float>> transformations;
+    const float softener = .1f;
+    const float GRAV_CONST = 25.f;
 
     for (int i = 0; i < particles.size(); i++) {
         
@@ -251,7 +253,7 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime) {
             if (i != j && main_pos.x != temp_pos.x && main_pos.y != temp_pos.y) {
 
                 auto distance = std::sqrt((temp_pos.x - main_pos.x) * (temp_pos.x - main_pos.x) + (temp_pos.y - main_pos.y) * (temp_pos.y - main_pos.y));
-                auto force = main_particle->mass * temp_particle->mass / (distance * distance);
+                auto force = GRAV_CONST * main_particle->mass * temp_particle->mass / ((distance * distance) + softener);
 
                 float fx = force * (temp_pos.x - main_pos.x) / abs(distance);
                 float fy = force * (temp_pos.y - main_pos.y) / abs(distance);
@@ -265,8 +267,9 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime) {
     // Updates the particles with their respective x and y shift
     for (int i = 0; i < particles.size(); i++) {
         sf::Vector2f pos = particles[i]->particle->getPosition();
-        particles[i]->velocity->x += deltaTime * std::get<0>(transformations[i]);
-        particles[i]->velocity->y += deltaTime * std::get<1>(transformations[i]);
+        float mass = particles[i]->mass;
+        particles[i]->velocity->x += deltaTime * std::get<0>(transformations[i]) / mass;
+        particles[i]->velocity->y += deltaTime * std::get<1>(transformations[i]) / mass;
         particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
     }
 }
@@ -602,7 +605,7 @@ int main()
                         sf::Vector2f position(mouse.x + i, mouse.y + i);
 
                         sf::Color color;
-                        std::string type = "fire";
+                        std::string type = "notfire";
                         if (type != "fire") {
                             if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
                             else { color = sf::Color(red, green, blue); }
