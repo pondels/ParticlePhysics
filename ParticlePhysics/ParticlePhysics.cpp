@@ -228,37 +228,19 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut *space_qt) {
+void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut* space_qt) {
 
     std::vector<std::tuple<float, float>> transformations;
+
     const float softener = .1f;
     const float GRAV_CONST = 25.f;
 
     for (int i = 0; i < particles.size(); i++) {
-        
-        Particle* main_particle = particles[i];
-        sf::Vector2f main_pos = main_particle->particle->getPosition();
-
         float x_shift = 0;
         float y_shift = 0;
-
-        for (int j = 0; j < particles.size(); j++) {
-            Particle* temp_particle = particles[j];
-            sf::Vector2f temp_pos = temp_particle->particle->getPosition();
-
-            // Particle can't move towards itself
-            if (i != j && main_pos.x != temp_pos.x && main_pos.y != temp_pos.y) {
-
-                auto distance = std::sqrt((temp_pos.x - main_pos.x) * (temp_pos.x - main_pos.x) + (temp_pos.y - main_pos.y) * (temp_pos.y - main_pos.y));
-                auto force = GRAV_CONST * main_particle->mass * temp_particle->mass / ((distance * distance) + softener);
-
-                float fx = force * (temp_pos.x - main_pos.x) / abs(distance);
-                float fy = force * (temp_pos.y - main_pos.y) / abs(distance);
-                x_shift += fx;
-                y_shift += fy;
-            }
-        }
-        transformations.push_back(std::tuple<float, float>(x_shift, y_shift));
+        space_qt->calculate_force(i, particles[i], x_shift, y_shift);
+        std::tuple<float, float> transformation(x_shift, y_shift);
+        transformations.push_back(transformation);
     }
 
     // Updates the particles with their respective x and y shift
@@ -270,6 +252,48 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime, Ba
         particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
     }
 }
+//void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut *space_qt) {
+//
+//    std::vector<std::tuple<float, float>> transformations;
+//    const float softener = .1f;
+//    const float GRAV_CONST = 25.f;
+//
+//    for (int i = 0; i < particles.size(); i++) {
+//        
+//        Particle* main_particle = particles[i];
+//        sf::Vector2f main_pos = main_particle->particle->getPosition();
+//
+//        float x_shift = 0;
+//        float y_shift = 0;
+//
+//        for (int j = 0; j < particles.size(); j++) {
+//            Particle* temp_particle = particles[j];
+//            sf::Vector2f temp_pos = temp_particle->particle->getPosition();
+//
+//            // Particle can't move towards itself
+//            if (i != j && main_pos.x != temp_pos.x && main_pos.y != temp_pos.y) {
+//
+//                auto distance = std::sqrt((temp_pos.x - main_pos.x) * (temp_pos.x - main_pos.x) + (temp_pos.y - main_pos.y) * (temp_pos.y - main_pos.y));
+//                auto force = GRAV_CONST * main_particle->mass * temp_particle->mass / ((distance * distance) + softener);
+//
+//                float fx = force * (temp_pos.x - main_pos.x) / abs(distance);
+//                float fy = force * (temp_pos.y - main_pos.y) / abs(distance);
+//                x_shift += fx;
+//                y_shift += fy;
+//            }
+//        }
+//        transformations.push_back(std::tuple<float, float>(x_shift, y_shift));
+//    }
+//
+//    // Updates the particles with their respective x and y shift
+//    for (int i = 0; i < particles.size(); i++) {
+//        sf::Vector2f pos = particles[i]->particle->getPosition();
+//        float mass = particles[i]->mass;
+//        particles[i]->velocity->x += deltaTime * std::get<0>(transformations[i]) / mass;
+//        particles[i]->velocity->y += deltaTime * std::get<1>(transformations[i]) / mass;
+//        particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
+//    }
+//}
 void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt) {
     if (gravity != 0) {
         for (int i = 0; i < particles.size(); i++) {
@@ -344,7 +368,7 @@ int main()
     // Standard particle features
     int start_vel_x = 0;
     int start_vel_y = 0;
-    int mass = 150;
+    int mass = 1;
     int radius = 15;
     int modifier = 1;
     int particle_amount = 1;
@@ -376,7 +400,7 @@ int main()
     bool b_dir = false;
 
     // Boundary to the quadtrees
-    /*RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));*/
+    RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
 
     while (window->isOpen())
     {
@@ -637,17 +661,17 @@ int main()
 
 
             // Refactoring QuadTrees
-            RectangleBB col_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
-            RectangleBB spa_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
-            QuadTree *collisions_qt = new QuadTree(col_bounds, 1);
-            Barnes_Hut *space_qt = new Barnes_Hut(spa_bounds, 1);
+            //RectangleBB col_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+            //RectangleBB spa_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+            QuadTree *collisions_qt = new QuadTree(bounds, 1);
+            Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
 
             // Adds particles to QuadTree
             for (int i = 0; i < particles.size(); i++) {
                 sf::Vector2f pos = particles[i]->particle->getPosition();
                 Point point(pos, i, particles[i]->mass);
                 collisions_qt->insert(point);
-                //if (gravity == 0) space_qt->insert(point);
+                if (gravity == 0) space_qt->insert(point);
             }
 
             if (display_particles) {

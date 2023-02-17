@@ -148,7 +148,7 @@ public:
 	float x_sum = 0;
 	float y_sum = 0;
 	float total_mass = 0;
-	sf::Vector2f center_of_mass;
+	sf::Vector2f center_of_mass = sf::Vector2f(0, 0);
 
 	Barnes_Hut() = default;
 	Barnes_Hut(RectangleBB bounds, int cap) {
@@ -168,11 +168,27 @@ public:
 		center_of_mass.x = x_sum / total_mass;
 		center_of_mass.y = y_sum / total_mass;
 	}
+	void subdivide() {
+		float x = boundary.x;
+		float y = boundary.y;
+		float w = boundary.w;
+		float h = boundary.h;
+
+		RectangleBB NE(sf::Vector2f(x + w / 2, y - h / 2), w / 2, h / 2);
+		RectangleBB NW(sf::Vector2f(x - w / 2, y - h / 2), w / 2, h / 2);
+		RectangleBB SE(sf::Vector2f(x + w / 2, y + h / 2), w / 2, h / 2);
+		RectangleBB SW(sf::Vector2f(x - w / 2, y + h / 2), w / 2, h / 2);
+		northWestBarnes = new Barnes_Hut(NW, capacity);
+		northEastBarnes = new Barnes_Hut(NE, capacity);
+		southWestBarnes = new Barnes_Hut(SW, capacity);
+		southEastBarnes = new Barnes_Hut(SE, capacity);
+		subdivided = true;
+	}
 	void insert_recur(Point point) {
-		northWestBarnes->insert(point);
-		northEastBarnes->insert(point);
-		southWestBarnes->insert(point);
-		southEastBarnes->insert(point);
+		if (northWestBarnes->insert(point)) return;
+		if (northEastBarnes->insert(point)) return;
+		if (southWestBarnes->insert(point)) return;
+		if (southEastBarnes->insert(point)) return;
 	}
 	bool insert(Point point) {
 		
@@ -192,54 +208,31 @@ public:
 		if (!subdivided) subdivide();
 
 		// Moving Current Node then clearing the array
-		insert_recur((*points)[0]);
+		for (int i = 0; i < points->size(); i++) {
+			insert_recur((*points)[i]);
+		}
 		points->clear();
 
 		// Placing New Node
 		insert_recur(point);
-
+		
 		return true;
 	}
-	void subdivide() {
-		float x = boundary.x;
-		float y = boundary.y;
-		float w = boundary.w;
-		float h = boundary.h;
-
-		RectangleBB NE(sf::Vector2f(x + w / 2, y - h / 2), w / 2, h / 2);
-		RectangleBB NW(sf::Vector2f(x - w / 2, y - h / 2), w / 2, h / 2);
-		RectangleBB SE(sf::Vector2f(x + w / 2, y + h / 2), w / 2, h / 2);
-		RectangleBB SW(sf::Vector2f(x - w / 2, y + h / 2), w / 2, h / 2);
-		northWestBarnes = new Barnes_Hut(NW, capacity);
-		northEastBarnes = new Barnes_Hut(NE, capacity);
-		southWestBarnes = new Barnes_Hut(SW, capacity);
-		southEastBarnes = new Barnes_Hut(SE, capacity);
-		subdivided = true;
-	}
-	void calculate_force(int index, Particle* main_particle, std::tuple<float, float, float>& values) {
-
-	//	/*
-	//	VARIABLES AND THEIR USAGE
-	//	Index: Used to check if the particle is itself
-	//	main_particle: the particle being passed through the calculations
-	//	values: In order, net_force, x_shift, y_shift
-	//		net_force: total force on a particle
-	//		x_shift/y_shift: Total plane transformation on a particle
-	//	*/
+	void calculate_force(int index, Particle* main_particle, float& x_shift, float& y_shift) {
 
 		sf::Vector2f main_pos = main_particle->particle->getPosition();
 
 		// Boundary contains particle that's not itself
-		if (points->size() > 0 && (*points)[0].index != index) {
+		if (points->size() > 0) {
+			if ((*points)[0].index == index) return;
 			Point temp_particle = (*points)[0];
 			float temp_mass = temp_particle.mass;
 
 			auto distance = std::sqrt((temp_particle.x - main_pos.x) * (temp_particle.x - main_pos.x) + (temp_particle.y - main_pos.y) * (temp_particle.y - main_pos.y));
 			auto force = GRAV_CONST * main_particle->mass * temp_mass / ((distance * distance) + SOFTENER);
 
-			std::get<0>(values) += force;
-			std::get<1>(values) += force * (temp_particle.x - main_pos.x) / abs(distance);
-			std::get<2>(values) += force * (temp_particle.y - main_pos.y) / abs(distance);
+			x_shift += force * (temp_particle.x - main_pos.x) / abs(distance);
+			y_shift += force * (temp_particle.y - main_pos.y) / abs(distance);
 			return;
 		}
 
@@ -249,18 +242,18 @@ public:
 		if (s / d < THETA) {
 			auto force = GRAV_CONST * main_particle->mass * total_mass / ((d * d) + SOFTENER);
 
-			std::get<0>(values) += force;
-			std::get<1>(values) += force * (center_of_mass.x - main_pos.x) / abs(d);
-			std::get<2>(values) += force * (center_of_mass.y - main_pos.y) / abs(d);
+			x_shift += force * (center_of_mass.x - main_pos.x) / abs(d);
+			y_shift += force * (center_of_mass.y - main_pos.y) / abs(d);
 			return;
 		}
 
-		else {
-			northEastBarnes->calculate_force(index, main_particle, values);
-			northWestBarnes->calculate_force(index, main_particle, values);
-			southEastBarnes->calculate_force(index, main_particle, values);
-			southWestBarnes->calculate_force(index, main_particle, values);
+		if (subdivided) {
+			northEastBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+			northWestBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+			southEastBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+			southWestBarnes->calculate_force(index, main_particle, x_shift, y_shift);
 		}
+		return;
 	}
 };
 
