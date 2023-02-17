@@ -368,20 +368,21 @@ int main()
     // Standard particle features
     int start_vel_x = 0;
     int start_vel_y = 0;
-    int mass = 1;
-    int radius = 15;
+    int mass = 2000;
+    int radius = 1;
     int modifier = 1;
-    int particle_amount = 1;
+    int particle_amount = 350;
     int red = 255;
     int green = 0;
     int blue = 0;
     float gravity = 0.f;
     int temperature = 15;
-    bool rainbow_mode = false;
+    bool rainbow_mode = true;
 
     // Display Options
     bool display_quad_tree = false;
     bool display_particles = true;
+    bool display_centroid = false;
 
     std::string UI_render_type = "closed";
     UserInterface ui(windowsize);
@@ -426,6 +427,10 @@ int main()
                 else if (event.key.code == sf::Keyboard::Q) {
                     if (display_quad_tree) { display_quad_tree = false; }
                     else { display_quad_tree = true; }
+                }
+                else if (event.key.code == sf::Keyboard::C) {
+                    if (display_centroid) { display_centroid = false; }
+                    else { display_centroid = true; }
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
@@ -661,9 +666,7 @@ int main()
 
 
             // Refactoring QuadTrees
-            //RectangleBB col_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
-            //RectangleBB spa_bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
-            QuadTree *collisions_qt = new QuadTree(bounds, 1);
+            QuadTree *collisions_qt = new QuadTree(bounds, 6);
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
 
             // Adds particles to QuadTree
@@ -682,6 +685,27 @@ int main()
             }
 
             update_particles(particles, subdt, gravity, collisions_qt, space_qt);
+
+            if (display_centroid) {
+                // Draw Centroid according to all particles
+                sf::CircleShape centroid(5);
+                centroid.setOrigin(5, 5);
+                centroid.setFillColor(sf::Color(255, 255, 255));
+                float total_x = 0;
+                float total_y = 0;
+                float total_mass = 0;
+
+                for (auto& particle : particles) {
+                    sf::Vector2f pos = particle->particle->getPosition();
+                    total_x += pos.x;
+                    total_y += pos.y;
+                    total_mass += particle->mass;
+                }
+                if (total_mass > 0) {
+                    centroid.setPosition(total_x / particles.size(), total_y / particles.size());
+                    window->draw(centroid);
+                }
+            }
 
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {

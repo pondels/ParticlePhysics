@@ -223,37 +223,40 @@ public:
 		sf::Vector2f main_pos = main_particle->particle->getPosition();
 
 		// Boundary contains particle that's not itself
-		if (points->size() > 0) {
-			if ((*points)[0].index == index) return;
+		if (points->size() > 0 && (*points)[0].index != index) {
+			//if() {
 			Point temp_particle = (*points)[0];
 			float temp_mass = temp_particle.mass;
 
 			auto distance = std::sqrt((temp_particle.x - main_pos.x) * (temp_particle.x - main_pos.x) + (temp_particle.y - main_pos.y) * (temp_particle.y - main_pos.y));
-			auto force = GRAV_CONST * main_particle->mass * temp_mass / ((distance * distance) + SOFTENER);
+			if (distance > .0001) {
+				auto force = GRAV_CONST * main_particle->mass * temp_mass / ((distance * distance) + SOFTENER);
 
-			x_shift += force * (temp_particle.x - main_pos.x) / abs(distance);
-			y_shift += force * (temp_particle.y - main_pos.y) / abs(distance);
+				x_shift += force * (temp_particle.x - main_pos.x) / abs(distance);
+				y_shift += force * (temp_particle.y - main_pos.y) / abs(distance);
+				return;
+			}
+		}
+		else {
+			float s = boundary.w;
+			float d = std::sqrt((center_of_mass.x - main_pos.x) * (center_of_mass.x - main_pos.x) + (center_of_mass.y - main_pos.y) * (center_of_mass.y - main_pos.y));;
+			if (d > .0001) {
+				if (s / d < THETA) {
+					auto force = GRAV_CONST * main_particle->mass * total_mass / ((d * d) + SOFTENER);
+
+					x_shift += force * (center_of_mass.x - main_pos.x) / abs(d);
+					y_shift += force * (center_of_mass.y - main_pos.y) / abs(d);
+				}
+			}
+
+			if (subdivided) {
+				northEastBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+				northWestBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+				southEastBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+				southWestBarnes->calculate_force(index, main_particle, x_shift, y_shift);
+			}
 			return;
 		}
-
-		float s = boundary.w;
-		float d = std::sqrt((center_of_mass.x - main_pos.x) * (center_of_mass.x - main_pos.x) + (center_of_mass.y - main_pos.y) * (center_of_mass.y - main_pos.y));;
-
-		if (s / d < THETA) {
-			auto force = GRAV_CONST * main_particle->mass * total_mass / ((d * d) + SOFTENER);
-
-			x_shift += force * (center_of_mass.x - main_pos.x) / abs(d);
-			y_shift += force * (center_of_mass.y - main_pos.y) / abs(d);
-			return;
-		}
-
-		if (subdivided) {
-			northEastBarnes->calculate_force(index, main_particle, x_shift, y_shift);
-			northWestBarnes->calculate_force(index, main_particle, x_shift, y_shift);
-			southEastBarnes->calculate_force(index, main_particle, x_shift, y_shift);
-			southWestBarnes->calculate_force(index, main_particle, x_shift, y_shift);
-		}
-		return;
 	}
 };
 
