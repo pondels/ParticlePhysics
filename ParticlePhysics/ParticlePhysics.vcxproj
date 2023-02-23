@@ -155,6 +155,7 @@
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="shapes.h" />
     <ClInclude Include="qtree.h" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="UI.h" />

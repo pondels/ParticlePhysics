@@ -7,31 +7,7 @@
 #include <thread>
 #include "UI.h"
 #include "QTree.h"
-
-/*
-
-*****SOURCES*****
-https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
-https://chat.openai.com/chat
-https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
-https://en.wikipedia.org/wiki/Quadtree#:~:text=A%20quadtree%20is%20a%20tree,into%20four%20quadrants%20or%20regions.
-https://www.geeksforgeeks.org/2d-vector-in-cpp-with-user-defined-size/
-*****SOURCES*****
-
-*/
-
-/* 
-
-#include <iostream>
-#include <SFML/Graphics.hpp>
-#include "particle.h"
-#include <cmath>
-#include <sstream>
-#include <algorithm>
-#include <thread>
-#include "UI.h"
-#include "UI.cpp"
-#include "qtree.h"
+#include "shapes.h"
 
 /*
 
@@ -42,6 +18,8 @@ https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
 https://en.wikipedia.org/wiki/Quadtree#:~:text=A%20quadtree%20is%20a%20tree,into%20four%20quadrants%20or%20regions.
 https://www.geeksforgeeks.org/2d-vector-in-cpp-with-user-defined-size/
 http://arborjs.org/docs/barnes-hut
+https://en.wikipedia.org/wiki/B%C3%A9zier_curve
+https://gamedev.stackexchange.com/questions/37802/collision-detection-with-curves#:~:text=You%20can%20actually%20see%20if,closest%20point%20on%20the%20curve.
 *****SOURCES*****
 
 */
@@ -103,7 +81,13 @@ bool horizontal_overlap(float x1, float x2, float r1, float r2) {
     if (abs(x1 - x2) - (r1 + r2) < 0) return true;
     return false;
 }
-void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt) {
+void line_collision(Particle* particle, std::vector<Line> lines) {
+    
+}
+void curve_collision(Particle* particle, std::vector<Bezier_Curve> curves) {
+
+}
+void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
 
     // Update Direction & Speed of particle based on collisions.
 
@@ -140,8 +124,13 @@ void check_collisions1(std::vector<Particle*> particles, Particle* particle, sf:
         particle->particle->setPosition(particlex, radius);
     }
 
-    // Colliding with other particles neat it
+    // Particle colliding with Line object
+    line_collision(particle, lines);
 
+    // Particle colliding with Bezier Curve object
+    curve_collision(particle, curves);
+
+    // Colliding with other particles neat it
     RectangleBB boundary(particle->particle->getPosition(), radius + biggest_radius, radius + biggest_radius);
     std::vector<Point> points;
     qt->queryRange(boundary, &points);
@@ -252,59 +241,18 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime, Ba
         particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
     }
 }
-//void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut *space_qt) {
-//
-//    std::vector<std::tuple<float, float>> transformations;
-//    const float softener = .1f;
-//    const float GRAV_CONST = 25.f;
-//
-//    for (int i = 0; i < particles.size(); i++) {
-//        
-//        Particle* main_particle = particles[i];
-//        sf::Vector2f main_pos = main_particle->particle->getPosition();
-//
-//        float x_shift = 0;
-//        float y_shift = 0;
-//
-//        for (int j = 0; j < particles.size(); j++) {
-//            Particle* temp_particle = particles[j];
-//            sf::Vector2f temp_pos = temp_particle->particle->getPosition();
-//
-//            // Particle can't move towards itself
-//            if (i != j && main_pos.x != temp_pos.x && main_pos.y != temp_pos.y) {
-//
-//                auto distance = std::sqrt((temp_pos.x - main_pos.x) * (temp_pos.x - main_pos.x) + (temp_pos.y - main_pos.y) * (temp_pos.y - main_pos.y));
-//                auto force = GRAV_CONST * main_particle->mass * temp_particle->mass / ((distance * distance) + softener);
-//
-//                float fx = force * (temp_pos.x - main_pos.x) / abs(distance);
-//                float fy = force * (temp_pos.y - main_pos.y) / abs(distance);
-//                x_shift += fx;
-//                y_shift += fy;
-//            }
-//        }
-//        transformations.push_back(std::tuple<float, float>(x_shift, y_shift));
-//    }
-//
-//    // Updates the particles with their respective x and y shift
-//    for (int i = 0; i < particles.size(); i++) {
-//        sf::Vector2f pos = particles[i]->particle->getPosition();
-//        float mass = particles[i]->mass;
-//        particles[i]->velocity->x += deltaTime * std::get<0>(transformations[i]) / mass;
-//        particles[i]->velocity->y += deltaTime * std::get<1>(transformations[i]) / mass;
-//        particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
-//    }
-//}
-void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt) {
+void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
+    
     if (gravity != 0) {
         for (int i = 0; i < particles.size(); i++) {
             update_position(particles[i], particles[i]->particle, i, deltaTime, gravity, collisions_qt);
-            check_collisions1(particles, particles[i], particles[i]->particle, i, collisions_qt);
+            check_collisions(particles, particles[i], particles[i]->particle, i, collisions_qt, lines, curves);
         }
     }
     else {
         space_update_position(particles, deltaTime, space_qt);
         for (int i = 0; i < particles.size(); i++) {
-            check_collisions1(particles, particles[i], particles[i]->particle, i, collisions_qt);
+            check_collisions(particles, particles[i], particles[i]->particle, i, collisions_qt, lines, curves);
         }
     }
 }
@@ -361,7 +309,7 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
 }
 int main()
 {
-    int fps = 1000;
+    int fps = 165;
     sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
     window->setFramerateLimit(fps);
 
@@ -371,18 +319,30 @@ int main()
     int mass = 2000;
     int radius = 1;
     int modifier = 1;
-    int particle_amount = 350;
+    int particle_amount = 35;
     int red = 255;
     int green = 0;
     int blue = 0;
-    float gravity = 0.f;
+    float gravity = 9.8f;
     int temperature = 15;
     bool rainbow_mode = true;
 
-    // Display Options
-    bool display_quad_tree = false;
-    bool display_particles = true;
-    bool display_centroid = false;
+    // What mode the user is on
+    bool draw_line = false;
+    bool draw_curve = false;
+    bool draw_particles = true;
+
+    // Sets the vectors up for drawing custom shapes
+    std::vector<Line> lines;
+    std::vector<Bezier_Curve> curves;
+
+    // Sets the vectors up with their starting points
+    //sf::VertexArray* vertex = new sf::VertexArray(sf::LineStrip, 20);
+    //Line line(vertex, 20);
+    //lines.push_back(line);
+    //sf::VertexArray* vertex2 = new sf::VertexArray(sf::LineStrip, 50);
+    //Bezier_Curve curve(vertex2, 50);
+    //curves.push_back(curve);
 
     std::string UI_render_type = "closed";
     UserInterface ui(windowsize);
@@ -418,24 +378,29 @@ int main()
                         delete particles[i];
                     }
                     particles.clear();
+                    lines.clear();
+                    curves.clear();
                     biggest_radius = 0;
                 }
-                else if (event.key.code == sf::Keyboard::P) {
-                    if (display_particles) { display_particles = false; }
-                    else { display_particles = true; }
-                }
-                else if (event.key.code == sf::Keyboard::Q) {
-                    if (display_quad_tree) { display_quad_tree = false; }
-                    else { display_quad_tree = true; }
+                else if (event.key.code == sf::Keyboard::L) {
+                    draw_line = true;
+                    draw_curve = false;
+                    draw_particles = false;
                 }
                 else if (event.key.code == sf::Keyboard::C) {
-                    if (display_centroid) { display_centroid = false; }
-                    else { display_centroid = true; }
+                    draw_line = false;
+                    draw_curve = true;
+                    draw_particles = false;
+                }
+                else if (event.key.code == sf::Keyboard::P) {
+                    draw_line = false;
+                    draw_curve = false;
+                    draw_particles = true;
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
                 sf::Vector2i mouse = sf::Mouse::getPosition(*window);
-                
+
                 int eventtype = -1;
                 if (UI_render_type == "closed") {
 
@@ -625,48 +590,82 @@ int main()
                 
                 if (eventtype == -1) {
 
-                    // Updates the biggest particle on screen
-                    if (radius > biggest_radius) biggest_radius = radius;
-
-                    // Placing particle
-                    for (int i = 0; i < particle_amount; i++) {
-
-                        sf::Vector2f position(mouse.x + i, mouse.y + i);
-
-                        sf::Color color;
-                        std::string type = "notfire";
-                        if (type != "fire") {
-                            if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
-                            else { color = sf::Color(red, green, blue); }
+                    if (draw_line) {
+                        
+                        // Checks if the last line was complete
+                        if (lines.size() == 0) {
+                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 20);
+                            Line new_line(new_vertex, 20);
+                            lines.push_back(new_line);
                         }
-                        else {
-                            color = fire_color_updater(temperature);
-                            red = color.r;
-                            blue = color.b;
-                            green = color.g;
+                        else if (lines.back().drawable) {
+                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 20);
+                            Line new_line(new_vertex, 20);
+                            lines.push_back(new_line);
                         }
-                        sf::Vector2f velocity(start_vel_x, start_vel_y);
-
-                        // Updating the preview incase particles change colors willingly
-                        particle_preview->setFillColor(sf::Color(red, green, blue));
-
-                        Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, 1);
-                        particles.push_back(particle);
+                        lines.back().add_point(sf::Vector2i(mouse.x, mouse.y));
                     }
+                    else if (draw_curve) {
 
-                    texts[0]->setString(std::to_string(red));
-                    texts[1]->setString(std::to_string(green));
-                    texts[2]->setString(std::to_string(blue));
+                        // Checks if the last line was complete
+                        if (curves.size() == 0) {
+                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
+                            Bezier_Curve new_curve(new_vertex, 50);
+                            curves.push_back(new_curve);
+                        }
+                        else if (curves.back().drawable) {
+                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
+                            Bezier_Curve new_curve(new_vertex, 50);
+                            curves.push_back(new_curve);
+                        }
+                        curves.back().add_point(sf::Vector2i(mouse.x, mouse.y));
+                    }
+                    else if (draw_particles) {
+                        std::cout << "Drawing Particles" << std::endl;
+                        // Updates the biggest particle on screen
+                        if (radius > biggest_radius) biggest_radius = radius;
+
+                        // Placing particle
+                        for (int i = 0; i < particle_amount; i++) {
+
+                            sf::Vector2f position(mouse.x + i, mouse.y + i);
+
+                            sf::Color color;
+                            std::string type = "fire";
+                            if (type != "fire") {
+                                if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
+                                else { color = sf::Color(red, green, blue); }
+                            }
+                            else {
+                                color = fire_color_updater(temperature);
+                                red = color.r;
+                                blue = color.b;
+                                green = color.g;
+                            }
+                            sf::Vector2f velocity(start_vel_x, start_vel_y);
+
+                            // Updating the preview incase particles change colors willingly
+                            particle_preview->setFillColor(sf::Color(red, green, blue));
+
+                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, 1);
+                            particles.push_back(particle);
+                        }
+
+                        texts[0]->setString(std::to_string(red));
+                        texts[1]->setString(std::to_string(green));
+                        texts[2]->setString(std::to_string(blue));
+                    }
                 }
             }
         }
 
         window->clear();
+
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
 
             // Refactoring QuadTrees
-            QuadTree *collisions_qt = new QuadTree(bounds, 6);
+            QuadTree *collisions_qt = new QuadTree(bounds, 4);
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
 
             // Adds particles to QuadTree
@@ -677,35 +676,11 @@ int main()
                 if (gravity == 0) space_qt->insert(point);
             }
 
-            if (display_particles) {
-                // Draws Particles
-                for (int i = 0; i < particles.size(); i++) {
-                    window->draw(*particles.at(i)->particle);
-                }
+            for (auto& particle : particles) {
+                window->draw(*particle->particle);
             }
 
-            update_particles(particles, subdt, gravity, collisions_qt, space_qt);
-
-            if (display_centroid) {
-                // Draw Centroid according to all particles
-                sf::CircleShape centroid(5);
-                centroid.setOrigin(5, 5);
-                centroid.setFillColor(sf::Color(255, 255, 255));
-                float total_x = 0;
-                float total_y = 0;
-                float total_mass = 0;
-
-                for (auto& particle : particles) {
-                    sf::Vector2f pos = particle->particle->getPosition();
-                    total_x += pos.x;
-                    total_y += pos.y;
-                    total_mass += particle->mass;
-                }
-                if (total_mass > 0) {
-                    centroid.setPosition(total_x / particles.size(), total_y / particles.size());
-                    window->draw(centroid);
-                }
-            }
+            update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
 
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {
@@ -720,6 +695,16 @@ int main()
                 window->draw(*texts.at(text));
             }
 
+            for (auto& line : lines) {
+                if (line.drawable) {
+                    window->draw(*line.shape);
+                }
+            }
+            for (auto& curve : curves) {
+                if (curve.drawable) {
+                    window->draw(*curve.shape);
+                }
+            }
             delete collisions_qt;
             delete space_qt;
         }
