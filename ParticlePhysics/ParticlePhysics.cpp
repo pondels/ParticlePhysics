@@ -83,9 +83,57 @@ bool horizontal_overlap(float x1, float x2, float r1, float r2) {
 }
 void line_collision(Particle* particle, std::vector<Line> lines) {
     
+    float restitution = .9f;
+    sf::Vector2f point = particle->particle->getPosition();
+    float radius = particle->radius;
+    
+    for (auto& line : lines) {
+        bool isCollision = false;
+        sf::VertexArray *shape = line.shape;
+        std::size_t numVertices = shape->getVertexCount();
+
+        sf::Vector2f slope = (*shape)[numVertices - 1].position - (*shape)[0].position;
+
+        // Check if the point is inside the vertex array
+        for (int i = 0; i < numVertices; i++)
+        {
+
+            // Particles Colliding
+            sf::Vector2f pos = (*shape)[i].position;
+            float distance = (pos.x - point.x) * (pos.x - point.x) + (pos.y - point.y) * (pos.y - point.y);
+            if (distance < radius * radius) {
+                particle->velocity->y *= -restitution;
+                particle->particle->setPosition(pos.x, pos.y - radius);
+            }
+        }
+    }
 }
 void curve_collision(Particle* particle, std::vector<Bezier_Curve> curves) {
+    
+    float restitution = .9f;
+    sf::Vector2f point = particle->particle->getPosition();
+    float radius = particle->radius;
 
+    for (auto& curve : curves) {
+        bool isCollision = false;
+        sf::VertexArray* shape = curve.shape;
+        std::size_t numVertices = shape->getVertexCount();
+
+        sf::Vector2f slope = (*shape)[numVertices - 1].position - (*shape)[0].position;
+
+        // Check if the point is inside the vertex array
+        for (int i = 0; i < numVertices; i++)
+        {
+
+            // Particles Colliding
+            sf::Vector2f pos = (*shape)[i].position;
+            float distance = (pos.x - point.x) * (pos.x - point.x) + (pos.y - point.y) * (pos.y - point.y);
+            if (distance < radius * radius) {
+                particle->velocity->y *= -restitution;
+                particle->particle->setPosition(point.x, pos.y - radius);
+            }
+        }
+    }
 }
 void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
 
@@ -316,10 +364,10 @@ int main()
     // Standard particle features
     int start_vel_x = 0;
     int start_vel_y = 0;
-    int mass = 2000;
-    int radius = 1;
+    int mass = 150;
+    int radius = 15;
     int modifier = 1;
-    int particle_amount = 35;
+    int particle_amount = 1;
     int red = 255;
     int green = 0;
     int blue = 0;
@@ -335,14 +383,6 @@ int main()
     // Sets the vectors up for drawing custom shapes
     std::vector<Line> lines;
     std::vector<Bezier_Curve> curves;
-
-    // Sets the vectors up with their starting points
-    //sf::VertexArray* vertex = new sf::VertexArray(sf::LineStrip, 20);
-    //Line line(vertex, 20);
-    //lines.push_back(line);
-    //sf::VertexArray* vertex2 = new sf::VertexArray(sf::LineStrip, 50);
-    //Bezier_Curve curve(vertex2, 50);
-    //curves.push_back(curve);
 
     std::string UI_render_type = "closed";
     UserInterface ui(windowsize);
@@ -594,13 +634,13 @@ int main()
                         
                         // Checks if the last line was complete
                         if (lines.size() == 0) {
-                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 20);
-                            Line new_line(new_vertex, 20);
+                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
+                            Line new_line(new_vertex, 50);
                             lines.push_back(new_line);
                         }
                         else if (lines.back().drawable) {
-                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 20);
-                            Line new_line(new_vertex, 20);
+                            sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
+                            Line new_line(new_vertex, 50);
                             lines.push_back(new_line);
                         }
                         lines.back().add_point(sf::Vector2i(mouse.x, mouse.y));
@@ -621,7 +661,6 @@ int main()
                         curves.back().add_point(sf::Vector2i(mouse.x, mouse.y));
                     }
                     else if (draw_particles) {
-                        std::cout << "Drawing Particles" << std::endl;
                         // Updates the biggest particle on screen
                         if (radius > biggest_radius) biggest_radius = radius;
 
@@ -676,8 +715,21 @@ int main()
                 if (gravity == 0) space_qt->insert(point);
             }
 
+            // Draws Particles
             for (auto& particle : particles) {
                 window->draw(*particle->particle);
+            }
+
+            // Draws all custom lines and curves
+            for (auto& line : lines) {
+                if (line.drawable) {
+                    window->draw(*line.shape);
+                }
+            }
+            for (auto& curve : curves) {
+                if (curve.drawable) {
+                    window->draw(*curve.shape);
+                }
             }
 
             update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
@@ -695,16 +747,6 @@ int main()
                 window->draw(*texts.at(text));
             }
 
-            for (auto& line : lines) {
-                if (line.drawable) {
-                    window->draw(*line.shape);
-                }
-            }
-            for (auto& curve : curves) {
-                if (curve.drawable) {
-                    window->draw(*curve.shape);
-                }
-            }
             delete collisions_qt;
             delete space_qt;
         }
