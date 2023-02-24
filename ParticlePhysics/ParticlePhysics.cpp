@@ -103,7 +103,7 @@ void line_collision(Particle* particle, std::vector<Line> lines) {
             float distance = (pos.x - point.x) * (pos.x - point.x) + (pos.y - point.y) * (pos.y - point.y);
             if (distance < radius * radius) {
                 particle->velocity->y *= -restitution;
-                particle->particle->setPosition(pos.x, pos.y - radius);
+                particle->particle->setPosition(point.x, pos.y - radius);
             }
         }
     }
