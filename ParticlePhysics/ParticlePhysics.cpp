@@ -81,7 +81,7 @@ bool horizontal_overlap(float x1, float x2, float r1, float r2) {
     if (abs(x1 - x2) - (r1 + r2) < 0) return true;
     return false;
 }
-void line_collision(Particle* particle, std::vector<Line> lines) {
+template <typename T> void line_collision(Particle* particle, T lines) {
 
     float restitution = .9f;
     sf::Vector2f point = particle->particle->getPosition();
@@ -90,60 +90,6 @@ void line_collision(Particle* particle, std::vector<Line> lines) {
     for (auto& line : lines) {
         bool isCollision = false;
         sf::VertexArray* shape = line.shape;
-        std::size_t numVertices = shape->getVertexCount();
-        bool colliding = false;
-        float closest_dist = -1;
-        sf::Vector2f closest_pos;
-
-        // Check if the point is inside the vertex array
-        for (int i = 0; i < numVertices; i++)
-        {
-
-            // Particles Colliding
-            sf::Vector2f pos = (*shape)[i].position;
-            float distance = (pos.x - point.x) * (pos.x - point.x) + (pos.y - point.y) * (pos.y - point.y);
-
-            // Colliding
-            if (distance < radius * radius) {
-                colliding = true;
-                if (distance < closest_dist || closest_dist == -1) {
-                    closest_dist = distance;
-                    closest_pos = pos;
-                }
-
-                // Updates particles velocity
-                sf::Vector2f lineVec = (*shape)[(i + 1) % numVertices].position - pos;
-                sf::Vector2f normal = sf::Vector2f(-lineVec.y, lineVec.x);
-                float length = sqrt(normal.x * normal.x + normal.y * normal.y);
-                normal /= length;
-                sf::Vector2f velocity = *particle->velocity;
-                float dot_product = velocity.x * normal.x + velocity.y * normal.y;
-                sf::Vector2f new_velocity = -2.f * dot_product * normal + velocity;
-                particle->velocity->x = new_velocity.x;
-                particle->velocity->y = new_velocity.y;
-            }
-        }
-
-        if (colliding) {
-            particle->velocity->y *= -restitution;
-
-            float set_x;
-            float set_y;
-            set_x = point.x;
-            if (closest_pos.y > point.y) set_y = closest_pos.y - radius;
-            else set_y = closest_pos.y + radius;
-            particle->particle->setPosition(set_x, set_y);
-        }
-    }
-}
-void curve_collision(Particle* particle, std::vector<Bezier_Curve> curves) {
-    float restitution = .9f;
-    sf::Vector2f point = particle->particle->getPosition();
-    float radius = particle->radius;
-
-    for (auto& curve : curves) {
-        bool isCollision = false;
-        sf::VertexArray* shape = curve.shape;
         std::size_t numVertices = shape->getVertexCount();
         bool colliding = false;
         float closest_dist = -1;
@@ -227,11 +173,9 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
         particle->particle->setPosition(particlex, radius);
     }
 
-    // Particle colliding with Line object
+    // Particle colliding with Line/Curve objects
     line_collision(particle, lines);
-
-    // Particle colliding with Bezier Curve object
-    curve_collision(particle, curves);
+    line_collision(particle, curves);
 
     // Colliding with other particles neat it
     RectangleBB boundary(particle->particle->getPosition(), radius + biggest_radius, radius + biggest_radius);
