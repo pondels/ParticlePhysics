@@ -82,17 +82,18 @@ bool horizontal_overlap(float x1, float x2, float r1, float r2) {
     return false;
 }
 void line_collision(Particle* particle, std::vector<Line> lines) {
-    
+
     float restitution = .9f;
     sf::Vector2f point = particle->particle->getPosition();
     float radius = particle->radius;
-    
+
     for (auto& line : lines) {
         bool isCollision = false;
-        sf::VertexArray *shape = line.shape;
+        sf::VertexArray* shape = line.shape;
         std::size_t numVertices = shape->getVertexCount();
-
-        sf::Vector2f slope = (*shape)[numVertices - 1].position - (*shape)[0].position;
+        bool colliding = false;
+        float closest_dist = -1;
+        sf::Vector2f closest_pos;
 
         // Check if the point is inside the vertex array
         for (int i = 0; i < numVertices; i++)
@@ -101,15 +102,41 @@ void line_collision(Particle* particle, std::vector<Line> lines) {
             // Particles Colliding
             sf::Vector2f pos = (*shape)[i].position;
             float distance = (pos.x - point.x) * (pos.x - point.x) + (pos.y - point.y) * (pos.y - point.y);
+
+            // Colliding
             if (distance < radius * radius) {
-                particle->velocity->y *= -restitution;
-                particle->particle->setPosition(point.x, pos.y - radius);
+                colliding = true;
+                if (distance < closest_dist || closest_dist == -1) {
+                    closest_dist = distance;
+                    closest_pos = pos;
+                }
+
+                // Updates particles velocity
+                sf::Vector2f lineVec = (*shape)[(i + 1) % numVertices].position - pos;
+                sf::Vector2f normal = sf::Vector2f(-lineVec.y, lineVec.x);
+                float length = sqrt(normal.x * normal.x + normal.y * normal.y);
+                normal /= length;
+                sf::Vector2f velocity = *particle->velocity;
+                float dot_product = velocity.x * normal.x + velocity.y * normal.y;
+                sf::Vector2f new_velocity = -2.f * dot_product * normal + velocity;
+                particle->velocity->x = new_velocity.x;
+                particle->velocity->y = new_velocity.y;
             }
+        }
+
+        if (colliding) {
+            particle->velocity->y *= -restitution;
+
+            float set_x;
+            float set_y;
+            set_x = point.x;
+            if (closest_pos.y > point.y) set_y = closest_pos.y - radius;
+            else set_y = closest_pos.y + radius;
+            particle->particle->setPosition(set_x, set_y);
         }
     }
 }
 void curve_collision(Particle* particle, std::vector<Bezier_Curve> curves) {
-    
     float restitution = .9f;
     sf::Vector2f point = particle->particle->getPosition();
     float radius = particle->radius;
@@ -118,8 +145,9 @@ void curve_collision(Particle* particle, std::vector<Bezier_Curve> curves) {
         bool isCollision = false;
         sf::VertexArray* shape = curve.shape;
         std::size_t numVertices = shape->getVertexCount();
-
-        sf::Vector2f slope = (*shape)[numVertices - 1].position - (*shape)[0].position;
+        bool colliding = false;
+        float closest_dist = -1;
+        sf::Vector2f closest_pos;
 
         // Check if the point is inside the vertex array
         for (int i = 0; i < numVertices; i++)
@@ -128,10 +156,37 @@ void curve_collision(Particle* particle, std::vector<Bezier_Curve> curves) {
             // Particles Colliding
             sf::Vector2f pos = (*shape)[i].position;
             float distance = (pos.x - point.x) * (pos.x - point.x) + (pos.y - point.y) * (pos.y - point.y);
+
+            // Colliding
             if (distance < radius * radius) {
-                particle->velocity->y *= -restitution;
-                particle->particle->setPosition(point.x, pos.y - radius);
+                colliding = true;
+                if (distance < closest_dist || closest_dist == -1) {
+                    closest_dist = distance;
+                    closest_pos = pos;
+                }
+
+                // Updates particles velocity
+                sf::Vector2f lineVec = (*shape)[(i + 1) % numVertices].position - pos;
+                sf::Vector2f normal = sf::Vector2f(-lineVec.y, lineVec.x);
+                float length = sqrt(normal.x * normal.x + normal.y * normal.y);
+                normal /= length;
+                sf::Vector2f velocity = *particle->velocity;
+                float dot_product = velocity.x * normal.x + velocity.y * normal.y;
+                sf::Vector2f new_velocity = -2.f * dot_product * normal + velocity;
+                particle->velocity->x = new_velocity.x;
+                particle->velocity->y = new_velocity.y;
             }
+        }
+
+        if (colliding) {
+            particle->velocity->y *= -restitution;
+
+            float set_x;
+            float set_y;
+            set_x = point.x;
+            if (closest_pos.y > point.y) set_y = closest_pos.y - radius;
+            else set_y = closest_pos.y + radius;
+            particle->particle->setPosition(set_x, set_y);
         }
     }
 }

@@ -51,6 +51,7 @@ public:
     }
 
     void create_curve() {
+        //reshape_vertex_array();
         (*shape)[0].position = p0;
         for (int i = 1; i < segments; i++) {
             float t = static_cast<float>(i) / 49.0f; // calculate the t parameter for the curve
@@ -83,7 +84,17 @@ public:
         }
     }
 
+    void reshape_vertex_array() {
+        // Resizes to 1 point per pixel
+        float length = sqrt((p1.x - p0.x) * (p1.x - p0.x) + (p1.y - p0.y) * (p1.y - p0.y));
+        std::cout << length << std::endl;
+        length = ceil(length);
+        shape->resize(length);
+        segments = length;
+    }
+
     void create_line() {
+        reshape_vertex_array();
         (*shape)[0].position = p0;
         float x_dif = (p1.x - p0.x) / (segments - 1);
         float y_dif = (p1.y - p0.y) / (segments - 1);
