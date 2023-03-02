@@ -288,6 +288,12 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime, Ba
         particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
     }
 }
+void wind_sim(std::vector<Particle*> particles, float horiztonal_blow, float vertical_blow) {
+    for (auto& particle : particles) {
+        particle->velocity->x += horiztonal_blow / 5;
+        particle->velocity->y += vertical_blow / 5;
+    }
+}
 void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
     
     if (gravity != 0) {
@@ -374,6 +380,11 @@ int main()
     int temperature = 15;
     bool rainbow_mode = true;
 
+    // Wind Garbage
+    bool wind_enabled = false;
+    float horizontal_blow = 15.0f;
+    float vertical_blow = 15.0f;
+
     // What mode the user is on
     bool draw_line = false;
     bool draw_curve = false;
@@ -435,6 +446,9 @@ int main()
                     draw_line = false;
                     draw_curve = false;
                     draw_particles = true;
+                }
+                else if (event.key.code == sf::Keyboard::W) {
+                    wind_enabled = wind_enabled ? false : true;
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
@@ -732,6 +746,9 @@ int main()
             }
 
             update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
+
+            // Wind Physics
+            if (wind_enabled) wind_sim(particles, horizontal_blow, vertical_blow);
 
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {
