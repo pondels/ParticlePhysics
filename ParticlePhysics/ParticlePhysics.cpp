@@ -138,7 +138,6 @@ template <typename T> void line_collision(Particle* particle, T lines) {
     }
 }
 void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
-
     // Update Direction & Speed of particle based on collisions.
 
     // Rate at which energy is lost against the wall/floor
@@ -192,6 +191,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
     // Particles to remove if consumed, destroyed, eaten, chomped, devoured, incinerated, blown up, thrown into the eternal abyss, or banished to the shadow realm
     std::vector<int> remove_indices;
 
+
     for (int i = 0; i < points.size(); i++) {
         int p_i = points.at(i).index;
 
@@ -235,6 +235,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                 particle->particle->setOrigin(new_radius, new_radius);
                                 break;
                             }
+                            std::cout << "Particle Consumed!" << std::endl;
                         }
                         else {
                             // Temperature transfers and then updates the colors
@@ -291,9 +292,12 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
         }
     }
 
-    // Removes all the unwanted particles
-    sort(remove_indices.begin(), remove_indices.end(), std::greater<int>());
-    for (int index : remove_indices) particles->erase(particles->begin() + index);
+
+    if (remove_indices.size() > 0) {
+        // Removes all the unwanted particles
+        sort(remove_indices.begin(), remove_indices.end(), std::greater<int>());
+        for (int index : remove_indices) particles->erase(particles->begin() + index);
+    }
 }
 void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity, QuadTree* qt) {
 
@@ -457,6 +461,7 @@ int main()
 
     while (window->isOpen())
     {
+
         sf::Event event;
         while (window->pollEvent(event)) 
         {
@@ -499,7 +504,7 @@ int main()
                     consume = true;
                 }
                 else if (event.key.code == 27) {
-
+                    consume = false;
                 }
                 else if (event.key.code == 28) {
 
@@ -799,10 +804,29 @@ int main()
 
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
-
             // Refactoring QuadTrees
             QuadTree *collisions_qt = new QuadTree(bounds, 4);
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
+
+            // Updates particles positions in case they are on the same pixel
+            sf::Vector2f curr_xy(-1, -1);
+            for (auto& particle : (*particles)) {
+                if (curr_xy.x == -1) {
+                    curr_xy = particle->particle->getPosition();
+                }
+                else {
+
+                    sf::Vector2f pos = particle->particle->getPosition();
+
+                    if (curr_xy.x == pos.x && curr_xy.y == pos.y) {
+                        std::cout << "SAME SPOT DETECTED!" << std::endl;
+                        pos.x++;
+                        pos.y++;
+                        particle->particle->setPosition(pos.x, pos.y);
+                    }
+                    curr_xy = pos;
+                }
+            }
 
             // Adds particles to QuadTree
             for (int i = 0; i < particles->size(); i++) {
