@@ -14,10 +14,11 @@ public:
 	double vy;
 	float temperature;
 	sf::Vector2f* velocity;
-	int viscosity;
+	float viscosity;
+	bool consume;
 
 	Particle() = default;
-	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, int visc) {
+	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons) {
 		particle = new sf::CircleShape(size);
 		particle->setPosition(position);
 		particle->setOrigin(size, size);
@@ -30,6 +31,7 @@ public:
 		type = particle_type;
 		temperature = temp;
 		viscosity = visc;
+		consume = cons;
 	}
 	~Particle() {
 		delete particle;

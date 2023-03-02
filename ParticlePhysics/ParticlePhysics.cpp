@@ -27,6 +27,7 @@ https://gamedev.stackexchange.com/questions/37802/collision-detection-with-curve
 // Tracks the biggest radius on screen
 int biggest_radius = 0;
 const float grav_const = 6.6743 * pow(10, -6);
+const float pi = 3.14159265;
 
 sf::Vector2f windowsize(1280, 720);
 float dot(sf::Vector2f a, sf::Vector2f b) {
@@ -136,13 +137,13 @@ template <typename T> void line_collision(Particle* particle, T lines) {
         }
     }
 }
-void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
+void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
 
     // Update Direction & Speed of particle based on collisions.
 
     // Rate at which energy is lost against the wall/floor
-    float restitution = .9f;
-    float friction = .999f;
+    float restitution = .9 - (particle->viscosity/500);
+    float friction = 0.9 + 0.099 * (1 - particle->viscosity / 500);
 
     float radius = shape->getGlobalBounds().height / 2;
     float particlex = shape->getPosition().x;
@@ -188,72 +189,111 @@ void check_collisions(std::vector<Particle*> particles, Particle* particle, sf::
     double m2 = particle->mass;
     sf::Vector2f* v2 = particle->velocity;
 
+    // Particles to remove if consumed, destroyed, eaten, chomped, devoured, incinerated, blown up, thrown into the eternal abyss, or banished to the shadow realm
+    std::vector<int> remove_indices;
+
     for (int i = 0; i < points.size(); i++) {
         int p_i = points.at(i).index;
 
         if (p_i != index) {
 
-            float x1 = particles[p_i]->particle->getPosition().x;
-            float y1 = particles[p_i]->particle->getPosition().y;
-            float r1 = particles[p_i]->radius;
-            double m1 = particles[p_i]->mass;
-            sf::Vector2f* v1 = particles[p_i]->velocity;
+            float x1 = (*particles)[p_i]->particle->getPosition().x;
+            float y1 = (*particles)[p_i]->particle->getPosition().y;
+            float r1 = (*particles)[p_i]->radius;
+            double m1 = (*particles)[p_i]->mass;
+            sf::Vector2f* v1 = (*particles)[p_i]->velocity;
 
             if (horizontal_overlap(x1, x2, r1, r2)) {
                 if (vertical_overlap(y1, y2, r1, r2)) {
                     float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
                     if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
 
-                        // Temperature transfers and then updates the colors
-                        if (particle->type == "fire" && particles[p_i]->type == "fire") {
-                            if (particle->temperature > particles[p_i]->temperature) {
-                                particle->temperature--;
-                                particles[p_i]->temperature++;
-                                sf::Color first_color = fire_color_updater(particle->temperature);
-                                sf::Color second_color = fire_color_updater(particles[p_i]->temperature);
-                                particle->particle->setFillColor(first_color);
-                                particles[p_i]->particle->setFillColor(second_color);
+                        // Particle should be consumed
+                        if (particle->consume || (*particles)[p_i]->consume) {
+
+                            // Adding mass and volume to the circle that nom-nom's the particle
+                            float area1 = pi * pow(particle->radius, 2);
+                            float area2 = pi * pow((*particles)[p_i]->radius, 2);
+                            float new_mass = particle->mass + (*particles)[p_i]->mass;
+                            float new_radius = sqrt((area1 + area2) / pi);
+
+                            // Add radius and mass to the particle the consumes and remove the other particle
+                            if (particle->consume) {
+                                // Banishing the particle to the shadow realm
+                                remove_indices.push_back(p_i);
+                                particle->mass = new_mass;
+                                particle->radius = new_radius;
+                                particle->particle->setRadius(ceil(new_radius));
+                                particle->particle->setOrigin(new_radius, new_radius);
                             }
-                            else if (particle->temperature < particles[p_i]->temperature) {
-                                particle->temperature++;
-                                particles[p_i]->temperature--;
-                                sf::Color first_color = fire_color_updater(particle->temperature);
-                                sf::Color second_color = fire_color_updater(particles[p_i]->temperature);
-                                particle->particle->setFillColor(first_color);
-                                particles[p_i]->particle->setFillColor(second_color);
+                            else {
+                                // The particle has been consumed so there's no reason for it to meet new friends
+                                remove_indices.push_back(index);
+                                (*particles)[p_i]->mass = new_mass;
+                                (*particles)[p_i]->radius = new_radius;
+                                (*particles)[p_i]->particle->setRadius(ceil(new_radius));
+                                particle->particle->setOrigin(new_radius, new_radius);
+                                break;
                             }
                         }
+                        else {
+                            // Temperature transfers and then updates the colors
+                            if (particle->type == "fire" && (*particles)[p_i]->type == "fire") {
+                                if (particle->temperature > (*particles)[p_i]->temperature) {
+                                    particle->temperature--;
+                                    (*particles)[p_i]->temperature++;
+                                    sf::Color first_color = fire_color_updater(particle->temperature);
+                                    sf::Color second_color = fire_color_updater((*particles)[p_i]->temperature);
+                                    particle->particle->setFillColor(first_color);
+                                    (*particles)[p_i]->particle->setFillColor(second_color);
+                                }
+                                else if (particle->temperature < (*particles)[p_i]->temperature) {
+                                    particle->temperature++;
+                                    (*particles)[p_i]->temperature--;
+                                    sf::Color first_color = fire_color_updater(particle->temperature);
+                                    sf::Color second_color = fire_color_updater((*particles)[p_i]->temperature);
+                                    particle->particle->setFillColor(first_color);
+                                    (*particles)[p_i]->particle->setFillColor(second_color);
+                                }
+                            }
 
-                        float distance = sqrtf(squaredistance);
-                        float overlap = (distance - r1 - r2) / 2.f;
+                            float distance = sqrtf(squaredistance);
+                            if (distance > 0.0001) {
+                                float overlap = (distance - r1 - r2) / 2.f;
 
-                        // If inside a particle, break out
-                        float moveX = (overlap * (x1 - x2) / distance);
-                        float moveY = (overlap * (y1 - y2) / distance);
+                                // If inside a particle, break out
+                                float moveX = (overlap * (x1 - x2) / distance);
+                                float moveY = (overlap * (y1 - y2) / distance);
 
-                        particles[p_i]->particle->setPosition(x1 - moveX, y1 - moveY);
-                        particle->particle->setPosition(x2 + moveX, y2 + moveY);
+                                (*particles)[p_i]->particle->setPosition(x1 - moveX, y1 - moveY);
+                                particle->particle->setPosition(x2 + moveX, y2 + moveY);
 
-                        sf::Vector2f vCollision(x2 - x1, y2 - y1);
-                        sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
-                        sf::Vector2f vRelativeVelocity(v1->x - v2->x, v1->y - v2->y);
-                        float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
-                        if (speed < 0) {
-                            break;
+                                sf::Vector2f vCollision(x2 - x1, y2 - y1);
+                                sf::Vector2f vCollisionNorm(vCollision.x / distance, vCollision.y / distance);
+                                sf::Vector2f vRelativeVelocity(v1->x - v2->x, v1->y - v2->y);
+                                float speed = vRelativeVelocity.x * vCollisionNorm.x + vRelativeVelocity.y * vCollisionNorm.y;
+                                if (speed < 0) {
+                                    break;
+                                }
+
+                                speed *= restitution;
+                                float impulse = float((2 * speed) / (m1 + m2));
+
+                                v1->x -= impulse * m2 * vCollisionNorm.x;
+                                v1->y -= impulse * m2 * vCollisionNorm.y;
+                                v2->x += impulse * m1 * vCollisionNorm.x;
+                                v2->y += impulse * m1 * vCollisionNorm.y;
+                            }
                         }
-
-                        speed *= restitution;
-                        float impulse = float((2 * speed) / (m1 + m2));
-
-                        v1->x -= impulse * m2 * vCollisionNorm.x;
-                        v1->y -= impulse * m2 * vCollisionNorm.y;
-                        v2->x += impulse * m1 * vCollisionNorm.x;
-                        v2->y += impulse * m1 * vCollisionNorm.y;
                     }
                 }
             }
         }
     }
+
+    // Removes all the unwanted particles
+    sort(remove_indices.begin(), remove_indices.end(), std::greater<int>());
+    for (int index : remove_indices) particles->erase(particles->begin() + index);
 }
 void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity, QuadTree* qt) {
 
@@ -288,24 +328,24 @@ void space_update_position(std::vector<Particle*> particles, float deltaTime, Ba
         particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
     }
 }
-void wind_sim(std::vector<Particle*> particles, float horiztonal_blow, float vertical_blow) {
-    for (auto& particle : particles) {
+void wind_sim(std::vector<Particle*>* particles, float horiztonal_blow, float vertical_blow) {
+    for (auto& particle : (*particles)) {
         particle->velocity->x += horiztonal_blow / 5;
         particle->velocity->y += vertical_blow / 5;
     }
 }
-void update_particles(std::vector<Particle*> particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
+void update_particles(std::vector<Particle*>* particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
     
     if (gravity != 0) {
-        for (int i = 0; i < particles.size(); i++) {
-            update_position(particles[i], particles[i]->particle, i, deltaTime, gravity, collisions_qt);
-            check_collisions(particles, particles[i], particles[i]->particle, i, collisions_qt, lines, curves);
+        for (int i = 0; i < particles->size(); i++) {
+            update_position((*particles)[i], (*particles)[i]->particle, i, deltaTime, gravity, collisions_qt);
+            check_collisions(particles, (*particles)[i], (*particles)[i]->particle, i, collisions_qt, lines, curves);
         }
     }
     else {
-        space_update_position(particles, deltaTime, space_qt);
-        for (int i = 0; i < particles.size(); i++) {
-            check_collisions(particles, particles[i], particles[i]->particle, i, collisions_qt, lines, curves);
+        space_update_position((*particles), deltaTime, space_qt);
+        for (int i = 0; i < particles->size(); i++) {
+            check_collisions(particles, (*particles)[i], (*particles)[i]->particle, i, collisions_qt, lines, curves);
         }
     }
 }
@@ -376,14 +416,16 @@ int main()
     int red = 255;
     int green = 0;
     int blue = 0;
-    float gravity = 9.8f;
+    float gravity = 0.0f;
     int temperature = 15;
     bool rainbow_mode = true;
+    float viscosity = 70;
+    bool consume = false;
 
     // Wind Garbage
     bool wind_enabled = false;
-    float horizontal_blow = 15.0f;
-    float vertical_blow = 15.0f;
+    float horizontal_blow = 0.0f;
+    float vertical_blow = 0.0f;
 
     // What mode the user is on
     bool draw_line = false;
@@ -399,7 +441,7 @@ int main()
     ui.create_UI(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature);
     std::vector<std::vector<sf::RectangleShape>> UI_vectors = ui.vectors;
 
-    std::vector<Particle*> particles;
+    std::vector<Particle*>* particles = new std::vector<Particle*>;
     std::vector<sf::Text*> texts = ui.texts;
     sf::CircleShape *particle_preview = ui.particle_preview;
 
@@ -424,10 +466,10 @@ int main()
                     window->close();
                 }
                 else if (event.key.code == sf::Keyboard::Delete) {
-                    for (int i = 0; i < particles.size(); i++) {
-                        delete particles[i];
+                    for (int i = 0; i < particles->size(); i++) {
+                        delete (*particles)[i];
                     }
-                    particles.clear();
+                    particles->clear();
                     lines.clear();
                     curves.clear();
                     biggest_radius = 0;
@@ -449,6 +491,39 @@ int main()
                 }
                 else if (event.key.code == sf::Keyboard::W) {
                     wind_enabled = wind_enabled ? false : true;
+                }
+                
+                // Custom Particles 0 - 9 on keyboard
+                //      Basically updates all the variables to be "custom"
+                else if (event.key.code == 26) {
+                    consume = true;
+                }
+                else if (event.key.code == 27) {
+
+                }
+                else if (event.key.code == 28) {
+
+                }
+                else if (event.key.code == 29) {
+
+                }
+                else if (event.key.code == 30) {
+
+                }
+                else if (event.key.code == 31) {
+
+                }
+                else if (event.key.code == 32) {
+
+                }
+                else if (event.key.code == 33) {
+
+                }
+                else if (event.key.code == 34) {
+
+                }
+                else if (event.key.code == 35) {
+
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
@@ -637,6 +712,15 @@ int main()
                                     eventtype = 12;
                                 }
                             }
+                            else if (i == 13) {
+                                // Adjusting the Wind values
+                                if (mouse_collide(mouse, pos, size)) {
+                                    if (j == 0) { horizontal_blow--; }
+                                    if (j == 2) { horizontal_blow++; }
+                                    if (j == 3) { vertical_blow--; }
+                                    if (j == 5) { vertical_blow++; }
+                                }
+                            }
                         }
                     }
                 }
@@ -699,8 +783,8 @@ int main()
                             // Updating the preview incase particles change colors willingly
                             particle_preview->setFillColor(sf::Color(red, green, blue));
 
-                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, 1);
-                            particles.push_back(particle);
+                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume);
+                            particles->push_back(particle);
                         }
 
                         texts[0]->setString(std::to_string(red));
@@ -721,15 +805,15 @@ int main()
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
 
             // Adds particles to QuadTree
-            for (int i = 0; i < particles.size(); i++) {
-                sf::Vector2f pos = particles[i]->particle->getPosition();
-                Point point(pos, i, particles[i]->mass);
+            for (int i = 0; i < particles->size(); i++) {
+                sf::Vector2f pos = (*particles)[i]->particle->getPosition();
+                Point point(pos, i, (*particles)[i]->mass);
                 collisions_qt->insert(point);
                 if (gravity == 0) space_qt->insert(point);
             }
 
             // Draws Particles
-            for (auto& particle : particles) {
+            for (auto& particle : (*particles)) {
                 window->draw(*particle->particle);
             }
 

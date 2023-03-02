@@ -47,6 +47,7 @@ void UserInterface::PictureDisplay() {
     vectors.push_back(std::vector<sf::RectangleShape>()); // Boxes to Change Gravity        [10]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Box to toggle rainbow mode     [11]
     vectors.push_back(std::vector<sf::RectangleShape>()); // Box to toggle temperature      [12]
+    vectors.push_back(std::vector<sf::RectangleShape>()); // Box to toggle wind             [13]
 
 
     // Declaring all the necessary colors
@@ -72,58 +73,58 @@ void UserInterface::PictureDisplay() {
     sf::RectangleShape rect4 = make_bar(backdrop, dark_grey, convert_resolution(sf::Vector2f(1920 - 50, 75)));
 
     // Bars surrounding the general UI
-    sf::Vector2f bg = convert_resolution(sf::Vector2f(450, 450));
-    sf::Vector2f hbm = convert_resolution(sf::Vector2f(450, 7));
-    sf::Vector2f sb = convert_resolution(sf::Vector2f(7, 450));
+    sf::Vector2f bg =  convert_resolution(sf::Vector2f(650, 650));
+    sf::Vector2f hbm = convert_resolution(sf::Vector2f(650, 7));
+    sf::Vector2f sb =  convert_resolution(sf::Vector2f(7, 650));
 
     // General Box Environment
     sf::RectangleShape background = make_bar(bg, dark_grey, convert_resolution(sf::Vector2f(1920, 0)));
-    sf::RectangleShape topbar = make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
-    sf::RectangleShape bottombar = make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 450)));
-    sf::RectangleShape sidebar = make_bar(sb, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
+    sf::RectangleShape topbar =     make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
+    sf::RectangleShape bottombar =  make_bar(hbm, light_grey, convert_resolution(sf::Vector2f(1920, 650)));
+    sf::RectangleShape sidebar =    make_bar(sb, light_grey, convert_resolution(sf::Vector2f(1920, 0)));
 
     // General Button Sizes
     sf::Vector2f plusminus = convert_resolution(sf::Vector2f(20, 40));
-    sf::Vector2f colorbox = convert_resolution(sf::Vector2f(40, 40));
+    sf::Vector2f colorbox =  convert_resolution(sf::Vector2f(40, 40));
 
     // RGB Buttons
-    sf::RectangleShape red = make_bar(colorbox, pastel_red, convert_resolution(sf::Vector2f(1920 + 75, 125)));
-    sf::RectangleShape rplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 115, 125)));
+    sf::RectangleShape red =    make_bar(colorbox, pastel_red, convert_resolution(sf::Vector2f(1920 + 75, 125)));
+    sf::RectangleShape rplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 115, 125)));
     sf::RectangleShape rminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 55, 125)));
-    sf::RectangleShape green = make_bar(colorbox, pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
-    sf::RectangleShape gplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 125)));
+    sf::RectangleShape green =  make_bar(colorbox, pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
+    sf::RectangleShape gplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 125)));
     sf::RectangleShape gminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 125)));
-    sf::RectangleShape blue = make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
-    sf::RectangleShape bplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
+    sf::RectangleShape blue =   make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
+    sf::RectangleShape bplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
     sf::RectangleShape bminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 285, 125)));
 
     // Radius, Size, and Velocity
-    sf::RectangleShape radius = make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 200)));
-    sf::RectangleShape radplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 200)));
-    sf::RectangleShape radminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 200)));
-    sf::RectangleShape mass = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 200)));
-    sf::RectangleShape massplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 200)));
+    sf::RectangleShape radius =    make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 200)));
+    sf::RectangleShape radplus =   make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 200)));
+    sf::RectangleShape radminus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 200)));
+    sf::RectangleShape mass =      make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 200)));
+    sf::RectangleShape massplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 200)));
     sf::RectangleShape massminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 200)));
     sf::RectangleShape velocityx = make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 132, 260)));
-    sf::RectangleShape velxplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 260)));
+    sf::RectangleShape velxplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 260)));
     sf::RectangleShape velxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 260)));
     sf::RectangleShape velocityy = make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 247, 260)));
-    sf::RectangleShape velyplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 260)));
+    sf::RectangleShape velyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 260)));
     sf::RectangleShape velyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 260)));
 
     // Number of Particles to Spawn in
-    sf::RectangleShape amount = make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 320)));
-    sf::RectangleShape amtplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 320)));
+    sf::RectangleShape amount =   make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 320)));
+    sf::RectangleShape amtplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 320)));
     sf::RectangleShape amtminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 320)));
 
     // Multiplier for variable adjustments
     sf::RectangleShape multiplier = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 320)));
-    sf::RectangleShape multiplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 320)));
+    sf::RectangleShape multiplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 320)));
     sf::RectangleShape multiminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 320)));
 
     // Gravity constant
-    sf::RectangleShape gravity = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 380)));
-    sf::RectangleShape gravplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 380)));
+    sf::RectangleShape gravity =   make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 380)));
+    sf::RectangleShape gravplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 380)));
     sf::RectangleShape gravminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 380)));
 
     // Rainbow Mode
@@ -131,8 +132,16 @@ void UserInterface::PictureDisplay() {
 
     // Temperature
     sf::RectangleShape temperature = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 490)));
-    sf::RectangleShape tempplus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 490)));
-    sf::RectangleShape tempminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 490)));
+    sf::RectangleShape tempplus =    make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 490)));
+    sf::RectangleShape tempminus =   make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 490)));
+
+    // Wind
+    sf::RectangleShape windx =      make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 132, 560)));
+    sf::RectangleShape windxplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 560)));
+    sf::RectangleShape windxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 560)));
+    sf::RectangleShape windy =      make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 247, 560)));
+    sf::RectangleShape windyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 560)));
+    sf::RectangleShape windyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 560)));
 
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
@@ -176,6 +185,12 @@ void UserInterface::PictureDisplay() {
     vectors[12].push_back(tempminus);
     vectors[12].push_back(temperature);
     vectors[12].push_back(tempplus);
+    vectors[13].push_back(windxminus);
+    vectors[13].push_back(windx);
+    vectors[13].push_back(windxplus);
+    vectors[13].push_back(windyminus);
+    vectors[13].push_back(windy);
+    vectors[13].push_back(windyplus);
 }
 
 void UserInterface::TextDisplay(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature) {

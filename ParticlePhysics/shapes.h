@@ -87,7 +87,6 @@ public:
     void reshape_vertex_array() {
         // Resizes to 1 point per pixel
         float length = sqrt((p1.x - p0.x) * (p1.x - p0.x) + (p1.y - p0.y) * (p1.y - p0.y));
-        std::cout << length << std::endl;
         length = ceil(length);
         shape->resize(length);
         segments = length;
