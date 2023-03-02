@@ -16,9 +16,10 @@ public:
 	sf::Vector2f* velocity;
 	float viscosity;
 	bool consume;
+	bool explode;
 
 	Particle() = default;
-	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons) {
+	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons, bool xplod) {
 		particle = new sf::CircleShape(size);
 		particle->setPosition(position);
 		particle->setOrigin(size, size);
@@ -32,6 +33,7 @@ public:
 		temperature = temp;
 		viscosity = visc;
 		consume = cons;
+		explode = xplod;
 	}
 	~Particle() {
 		delete particle;

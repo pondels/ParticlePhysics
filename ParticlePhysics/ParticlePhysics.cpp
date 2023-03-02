@@ -223,7 +223,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                 remove_indices.push_back(p_i);
                                 particle->mass = new_mass;
                                 particle->radius = new_radius;
-                                particle->particle->setRadius(ceil(new_radius));
+                                particle->particle->setRadius(new_radius);
                                 particle->particle->setOrigin(new_radius, new_radius);
                             }
                             else {
@@ -231,11 +231,10 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                 remove_indices.push_back(index);
                                 (*particles)[p_i]->mass = new_mass;
                                 (*particles)[p_i]->radius = new_radius;
-                                (*particles)[p_i]->particle->setRadius(ceil(new_radius));
+                                (*particles)[p_i]->particle->setRadius(new_radius);
                                 particle->particle->setOrigin(new_radius, new_radius);
                                 break;
                             }
-                            std::cout << "Particle Consumed!" << std::endl;
                         }
                         else {
                             // Temperature transfers and then updates the colors
@@ -296,7 +295,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
     if (remove_indices.size() > 0) {
         // Removes all the unwanted particles
         sort(remove_indices.begin(), remove_indices.end(), std::greater<int>());
-        for (int index : remove_indices) particles->erase(particles->begin() + index);
+        for (int index : remove_indices) if (index < particles->size()) particles->erase(particles->begin() + index);
     }
 }
 void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity, QuadTree* qt) {
@@ -425,6 +424,7 @@ int main()
     bool rainbow_mode = true;
     float viscosity = 70;
     bool consume = false;
+    bool explode = false;
 
     // Wind Garbage
     bool wind_enabled = false;
@@ -499,21 +499,23 @@ int main()
                 }
                 
                 // Custom Particles 0 - 9 on keyboard
-                //      Basically updates all the variables to be "custom"
-                else if (event.key.code == 26) {
-                    consume = true;
+                else if (event.key.code == 26) { // Consumed other particles
+                    consume = consume ? false : true;
                 }
-                else if (event.key.code == 27) {
-                    consume = false;
+                else if (event.key.code == 27) { // Explodes into smaller particles
+                    // Particles explode into an undetermined amount of particles on contact if fast enough
+                    explode = explode ? false : true;
                 }
-                else if (event.key.code == 28) {
-
+                else if (event.key.code == 28) { // Gives a particle negative mass
+                    // Negative Mass
+                    mass = -mass;
                 }
                 else if (event.key.code == 29) {
-
+                    // Electricity?
                 }
                 else if (event.key.code == 30) {
-
+                    // Radioactive
+                    radius = -radius;
                 }
                 else if (event.key.code == 31) {
 
@@ -788,7 +790,7 @@ int main()
                             // Updating the preview incase particles change colors willingly
                             particle_preview->setFillColor(sf::Color(red, green, blue));
 
-                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume);
+                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode);
                             particles->push_back(particle);
                         }
 
@@ -809,6 +811,7 @@ int main()
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
 
             // Updates particles positions in case they are on the same pixel
+            //  This prevents a memory leak from the space partitioner
             sf::Vector2f curr_xy(-1, -1);
             for (auto& particle : (*particles)) {
                 if (curr_xy.x == -1) {
@@ -819,7 +822,6 @@ int main()
                     sf::Vector2f pos = particle->particle->getPosition();
 
                     if (curr_xy.x == pos.x && curr_xy.y == pos.y) {
-                        std::cout << "SAME SPOT DETECTED!" << std::endl;
                         pos.x++;
                         pos.y++;
                         particle->particle->setPosition(pos.x, pos.y);
