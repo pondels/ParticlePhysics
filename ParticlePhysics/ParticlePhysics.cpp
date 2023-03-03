@@ -28,8 +28,10 @@ https://gamedev.stackexchange.com/questions/37802/collision-detection-with-curve
 int biggest_radius = 0;
 const float grav_const = 6.6743 * pow(10, -6);
 const float pi = 3.14159265;
-
+float gravity = 0.0f;
 sf::Vector2f windowsize(1280, 720);
+sf::Vector2f quadtreesize(1280, 720);
+
 float dot(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
@@ -148,29 +150,31 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
     float particlex = shape->getPosition().x;
     float particley = shape->getPosition().y;
 
-    // Colliding with the walls
-    if (particlex < radius) {
-        particle->velocity->x *= -restitution;
-        particle->particle->setPosition(radius, particley);
-        particlex = radius;
-    }
-    else if (particlex > windowsize.x - radius) {
-        particle->velocity->x *= -restitution;
-        particle->particle->setPosition(windowsize.x - radius, particley);
-        particlex = windowsize.x - radius;
-    }
+    if (gravity != 0) {
+        // Colliding with the walls
+        if (particlex < radius) {
+            particle->velocity->x *= -restitution;
+            particle->particle->setPosition(radius, particley);
+            particlex = radius;
+        }
+        else if (particlex > windowsize.x - radius) {
+            particle->velocity->x *= -restitution;
+            particle->particle->setPosition(windowsize.x - radius, particley);
+            particlex = windowsize.x - radius;
+        }
 
-    // Colliding with the ground
-    if (particley > windowsize.y - radius) {
-        particle->velocity->y *= -restitution;
-        particle->velocity->x *= friction;
-        particle->particle->setPosition(particlex, windowsize.y - radius);
-    }
+        // Colliding with the ground
+        if (particley > windowsize.y - radius) {
+            particle->velocity->y *= -restitution;
+            particle->velocity->x *= friction;
+            particle->particle->setPosition(particlex, windowsize.y - radius);
+        }
 
-    // Colliding with the ceiling
-    else if (particley < radius) {
-        particle->velocity->y *= -restitution;
-        particle->particle->setPosition(particlex, radius);
+        // Colliding with the ceiling
+        else if (particley < radius) {
+            particle->velocity->y *= -restitution;
+            particle->particle->setPosition(particlex, radius);
+        }
     }
 
     // Particle colliding with Line/Curve objects
@@ -408,6 +412,13 @@ int main()
     int fps = 165;
     sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
     window->setFramerateLimit(fps);
+    sf::View view(window->getDefaultView());
+    window->setView(view);
+
+    // Offset of the view to properly interact with the window
+    float view_horizonal = 0.0f;
+    float view_vertical  = 0.0f;
+    float view_zoom = 1.f;
 
     // Standard particle features
     int start_vel_x = 0;
@@ -419,7 +430,6 @@ int main()
     int red = 255;
     int green = 0;
     int blue = 0;
-    float gravity = 0.0f;
     int temperature = 15;
     bool rainbow_mode = true;
     float viscosity = 70;
@@ -456,9 +466,6 @@ int main()
     bool g_dir = true;
     bool b_dir = false;
 
-    // Boundary to the quadtrees
-    RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
-
     while (window->isOpen())
     {
 
@@ -470,6 +477,25 @@ int main()
                 if (event.key.code == sf::Keyboard::Escape) {
                     window->close();
                 }
+
+                // Pan Around Screen
+                else if (event.key.code == sf::Keyboard::Left) {
+                    view.move(-10.0f, 0.0f);
+                    view_horizonal -= 10;
+                }
+                else if (event.key.code == sf::Keyboard::Right) {
+                    view.move(10.0f, 0.0f);
+                    view_horizonal += 10;
+                }
+                else if (event.key.code == sf::Keyboard::Up) {
+                    view.move(0.0f, -10.0f);
+                    view_vertical -= 10;
+                }
+                else if (event.key.code == sf::Keyboard::Down) {
+                    view.move(0.0f, 10.0f);
+                    view_vertical += 10;
+                }
+                
                 else if (event.key.code == sf::Keyboard::Delete) {
                     for (int i = 0; i < particles->size(); i++) {
                         delete (*particles)[i];
@@ -515,16 +541,16 @@ int main()
                 }
                 else if (event.key.code == 30) {
                     // Radioactive
-                    radius = -radius;
+                    
                 }
                 else if (event.key.code == 31) {
-
+                    // Magenetism
                 }
                 else if (event.key.code == 32) {
-
+                    // Teleportation
                 }
                 else if (event.key.code == 33) {
-
+                    // Particle Swap
                 }
                 else if (event.key.code == 34) {
 
@@ -771,7 +797,7 @@ int main()
                         // Placing particle
                         for (int i = 0; i < particle_amount; i++) {
 
-                            sf::Vector2f position(mouse.x + i, mouse.y + i);
+                            sf::Vector2f position((mouse.x + i + view_horizonal) * view_zoom, (mouse.y + i + view_vertical) * view_zoom);
 
                             sf::Color color;
                             std::string type = "fire";
@@ -793,25 +819,55 @@ int main()
                             Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode);
                             particles->push_back(particle);
                         }
-
+                        std::cout << view_horizonal << " : " << view_vertical << " : " << view_zoom << std::endl;
                         texts[0]->setString(std::to_string(red));
                         texts[1]->setString(std::to_string(green));
                         texts[2]->setString(std::to_string(blue));
                     }
                 }
             }
+            // Zooming in and out
+            if (event.type == sf::Event::MouseWheelScrolled) {
+                if (event.mouseWheelScroll.delta > 0) {
+                    view.zoom(0.9f);
+                    view_zoom -= .1f;
+                }
+                else if (event.mouseWheelScroll.delta < 0) {
+                    view.zoom(1.1f);
+                    view_zoom += .1f;
+                }
+            }
         }
 
+        window->setView(view);
         window->clear();
 
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
+            // Boundary to the quadtrees
+            //RectangleBB bounds(sf::Vector2f(0, 0));
+            RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+            if (gravity == 0) {
+                float max_x = 0.0f;
+                float max_y = 0.0f;
+                for (auto& particle : (*particles)) {
+                    sf::Vector2f pos = particle->particle->getPosition();
+                    if (pos.x + particle->radius > max_x) max_x = pos.x + particle->radius;
+                    if (pos.y + particle->radius > max_y) max_y = pos.y + particle->radius;
+                }
+                quadtreesize.x = max_x;
+                quadtreesize.y = max_y;
+                bounds.x = quadtreesize.x / 2;
+                bounds.y = quadtreesize.y / 2;
+                bounds.w = quadtreesize.x / 2;
+                bounds.h = quadtreesize.y / 2;
+            }
             // Refactoring QuadTrees
             QuadTree *collisions_qt = new QuadTree(bounds, 4);
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
 
             // Updates particles positions in case they are on the same pixel
-            //  This prevents a memory leak from the space partitioner
+            //  This prevents a stack overflow with the space partitioner
             sf::Vector2f curr_xy(-1, -1);
             for (auto& particle : (*particles)) {
                 if (curr_xy.x == -1) {
@@ -839,9 +895,7 @@ int main()
             }
 
             // Draws Particles
-            for (auto& particle : (*particles)) {
-                window->draw(*particle->particle);
-            }
+            for (auto& particle : (*particles)) window->draw(*particle->particle);
 
             // Draws all custom lines and curves
             for (auto& line : lines) {
