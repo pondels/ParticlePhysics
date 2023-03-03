@@ -20,6 +20,7 @@ https://www.geeksforgeeks.org/2d-vector-in-cpp-with-user-defined-size/
 http://arborjs.org/docs/barnes-hut
 https://en.wikipedia.org/wiki/B%C3%A9zier_curve
 https://gamedev.stackexchange.com/questions/37802/collision-detection-with-curves#:~:text=You%20can%20actually%20see%20if,closest%20point%20on%20the%20curve.
+https://www.sfml-dev.org/tutorials/2.5/graphics-view.php
 *****SOURCES*****
 
 */
@@ -797,7 +798,10 @@ int main()
                         // Placing particle
                         for (int i = 0; i < particle_amount; i++) {
 
-                            sf::Vector2f position((mouse.x + i + view_horizonal) * view_zoom, (mouse.y + i + view_vertical) * view_zoom);
+                            sf::Vector2f position(
+                                (mouse.x + i + view_horizonal) * view_zoom,
+                                (mouse.y + i + view_vertical)  * view_zoom
+                            );
 
                             sf::Color color;
                             std::string type = "fire";
@@ -819,7 +823,6 @@ int main()
                             Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode);
                             particles->push_back(particle);
                         }
-                        std::cout << view_horizonal << " : " << view_vertical << " : " << view_zoom << std::endl;
                         texts[0]->setString(std::to_string(red));
                         texts[1]->setString(std::to_string(green));
                         texts[2]->setString(std::to_string(blue));
@@ -829,12 +832,12 @@ int main()
             // Zooming in and out
             if (event.type == sf::Event::MouseWheelScrolled) {
                 if (event.mouseWheelScroll.delta > 0) {
-                    view.zoom(0.9f);
-                    view_zoom -= .1f;
+                    view.zoom(0.8f);
+                    view_zoom *= .8f;
                 }
                 else if (event.mouseWheelScroll.delta < 0) {
-                    view.zoom(1.1f);
-                    view_zoom += .1f;
+                    view.zoom(1.25f);
+                    view_zoom *= 1.25f;
                 }
             }
         }
