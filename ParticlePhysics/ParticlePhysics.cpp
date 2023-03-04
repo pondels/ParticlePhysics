@@ -151,14 +151,21 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
     float particlex = shape->getPosition().x;
     float particley = shape->getPosition().y;
 
+    if (particlex < radius) {
+        particle->velocity->x *= -restitution;
+        particle->particle->setPosition(radius, particley);
+        particlex = radius;
+    }
+
+    // Colliding with the ceiling
+    if (particley < radius) {
+        particle->velocity->y *= -restitution;
+        particle->particle->setPosition(particlex, radius);
+    }
+
     if (gravity != 0) {
-        // Colliding with the walls
-        if (particlex < radius) {
-            particle->velocity->x *= -restitution;
-            particle->particle->setPosition(radius, particley);
-            particlex = radius;
-        }
-        else if (particlex > windowsize.x - radius) {
+        // Colliding with the other wall
+        if (particlex > windowsize.x - radius) {
             particle->velocity->x *= -restitution;
             particle->particle->setPosition(windowsize.x - radius, particley);
             particlex = windowsize.x - radius;
@@ -171,11 +178,6 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
             particle->particle->setPosition(particlex, windowsize.y - radius);
         }
 
-        // Colliding with the ceiling
-        else if (particley < radius) {
-            particle->velocity->y *= -restitution;
-            particle->particle->setPosition(particlex, radius);
-        }
     }
 
     // Particle colliding with Line/Curve objects
@@ -416,11 +418,6 @@ int main()
     sf::View view(window->getDefaultView());
     window->setView(view);
 
-    // Offset of the view to properly interact with the window
-    float view_horizonal = 0.0f;
-    float view_vertical  = 0.0f;
-    float view_zoom = 1.f;
-
     // Standard particle features
     int start_vel_x = 0;
     int start_vel_y = 0;
@@ -480,22 +477,10 @@ int main()
                 }
 
                 // Pan Around Screen
-                else if (event.key.code == sf::Keyboard::Left) {
-                    view.move(-10.0f, 0.0f);
-                    view_horizonal -= 10;
-                }
-                else if (event.key.code == sf::Keyboard::Right) {
-                    view.move(10.0f, 0.0f);
-                    view_horizonal += 10;
-                }
-                else if (event.key.code == sf::Keyboard::Up) {
-                    view.move(0.0f, -10.0f);
-                    view_vertical -= 10;
-                }
-                else if (event.key.code == sf::Keyboard::Down) {
-                    view.move(0.0f, 10.0f);
-                    view_vertical += 10;
-                }
+                else if (event.key.code == sf::Keyboard::Left) view.move(-50.0f, 0.0f);
+                else if (event.key.code == sf::Keyboard::Right) view.move(50.0f, 0.0f);
+                else if (event.key.code == sf::Keyboard::Up) view.move(0.0f, -10.0f);
+                else if (event.key.code == sf::Keyboard::Down) view.move(0.0f, 10.0f);
                 
                 else if (event.key.code == sf::Keyboard::Delete) {
                     for (int i = 0; i < particles->size(); i++) {
@@ -561,7 +546,9 @@ int main()
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2i mouse = sf::Mouse::getPosition(*window);
+                sf::Vector2i mouse_pos = sf::Mouse::getPosition(*window);
+                sf::Vector2f mouse_conv = window->mapPixelToCoords(mouse_pos);
+                sf::Vector2i mouse = sf::Vector2i(mouse_conv.x, mouse_conv.y);
 
                 int eventtype = -1;
                 if (UI_render_type == "closed") {
@@ -798,10 +785,7 @@ int main()
                         // Placing particle
                         for (int i = 0; i < particle_amount; i++) {
 
-                            sf::Vector2f position(
-                                (mouse.x + i + view_horizonal) * view_zoom,
-                                (mouse.y + i + view_vertical)  * view_zoom
-                            );
+                            sf::Vector2f position(mouse.x + i, mouse.y + i);
 
                             sf::Color color;
                             std::string type = "fire";
@@ -831,14 +815,8 @@ int main()
             }
             // Zooming in and out
             if (event.type == sf::Event::MouseWheelScrolled) {
-                if (event.mouseWheelScroll.delta > 0) {
-                    view.zoom(0.8f);
-                    view_zoom *= .8f;
-                }
-                else if (event.mouseWheelScroll.delta < 0) {
-                    view.zoom(1.25f);
-                    view_zoom *= 1.25f;
-                }
+                if (event.mouseWheelScroll.delta > 0) view.zoom(0.8f);
+                else if (event.mouseWheelScroll.delta < 0) view.zoom(1.25f);
             }
         }
 
@@ -848,8 +826,8 @@ int main()
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
             // Boundary to the quadtrees
-            //RectangleBB bounds(sf::Vector2f(0, 0));
             RectangleBB bounds(sf::Vector2f(windowsize.x / 2, windowsize.y / 2), int(windowsize.x / 2), int(windowsize.y / 2));
+
             if (gravity == 0) {
                 float max_x = 0.0f;
                 float max_y = 0.0f;
@@ -865,6 +843,7 @@ int main()
                 bounds.w = quadtreesize.x / 2;
                 bounds.h = quadtreesize.y / 2;
             }
+            
             // Refactoring QuadTrees
             QuadTree *collisions_qt = new QuadTree(bounds, 4);
             Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
