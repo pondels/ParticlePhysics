@@ -17,9 +17,12 @@ public:
 	float viscosity;
 	bool consume;
 	bool explode;
+	bool teleportation;
+	bool swap;
+	bool iridescent;
 
 	Particle() = default;
-	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons, bool xplod) {
+	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons, bool xplod, bool teleport, bool particle_swap, bool iridescence) {
 		particle = new sf::CircleShape(size);
 		particle->setPosition(position);
 		particle->setOrigin(size, size);
@@ -34,6 +37,9 @@ public:
 		viscosity = visc;
 		consume = cons;
 		explode = xplod;
+		teleportation = teleport;
+		swap = particle_swap;
+		iridescent = iridescence;
 	}
 	~Particle() {
 		delete particle;

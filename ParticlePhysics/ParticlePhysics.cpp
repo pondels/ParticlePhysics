@@ -5,6 +5,8 @@
 #include <sstream>
 #include <algorithm>
 #include <thread>
+#include <chrono>
+#include <random>
 #include "UI.h"
 #include "QTree.h"
 #include "shapes.h"
@@ -21,6 +23,7 @@ http://arborjs.org/docs/barnes-hut
 https://en.wikipedia.org/wiki/B%C3%A9zier_curve
 https://gamedev.stackexchange.com/questions/37802/collision-detection-with-curves#:~:text=You%20can%20actually%20see%20if,closest%20point%20on%20the%20curve.
 https://www.sfml-dev.org/tutorials/2.5/graphics-view.php
+https://cplusplus.com/reference/random/?kw=%3Crandom%3E
 *****SOURCES*****
 
 */
@@ -76,6 +79,26 @@ sf::Color fire_color_updater(float temp) {
 
     sf::Color particle_color = sf::Color(R, G, B);
     return particle_color;
+}
+void inherit_properties(Particle* particle1, Particle* particle2) {
+
+    // First particle -  Particle receiving properties
+    // Second particle - Particle transferring properties
+
+    particle1->consume = (particle2->consume) ? true : particle1->consume;
+    //particle1->type = (particle2->type == "fire") ? "fire" : particle1->type;
+    //particle1->viscosity *= particle2->viscosity;
+    particle1->temperature += particle2->temperature;
+    particle1->explode = (particle2->explode) ? true : particle1->explode;
+    particle1->teleportation = (particle2->teleportation) ? true : particle1->teleportation;
+    particle1->swap = (particle2->swap) ? true : particle1->swap;
+    particle1->iridescent = (particle2->iridescent) ? true : particle1->iridescent;
+    sf::Color color1 = particle1->particle->getFillColor();
+    sf::Color color2 = particle2->particle->getFillColor();
+    color1.r += color2.r - color1.r;
+    color1.g += color2.g - color1.g;
+    color1.b += color2.b - color1.b;
+    particle1->particle->setFillColor(color1);
 }
 bool vertical_overlap(float y1, float y2, float r1, float r2) {
     if (abs(y1 - y2) - (r1 + r2) < 0) return true;
@@ -232,6 +255,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                 particle->radius = new_radius;
                                 particle->particle->setRadius(new_radius);
                                 particle->particle->setOrigin(new_radius, new_radius);
+                                inherit_properties(particle, (*particles)[p_i]);
                             }
                             else {
                                 // The particle has been consumed so there's no reason for it to meet new friends
@@ -240,6 +264,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                 (*particles)[p_i]->radius = new_radius;
                                 (*particles)[p_i]->particle->setRadius(new_radius);
                                 particle->particle->setOrigin(new_radius, new_radius);
+                                inherit_properties((*particles)[p_i], particle);
                                 break;
                             }
                         }
@@ -410,10 +435,33 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
+float random_number_generator(int fps, float substeps, std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
+    
+    // I googled a few methods. Chat GPT3 came in clutch with a better solution.
+    // I tried looking for where it may have found this solution but genuinely found nothing.
+    // Closest I found was from the cplusplus site, so I linked that
+
+    // Grabs the time and converts the time to microsecond transfer
+    auto time = std::chrono::system_clock::now();
+    auto msec = std::chrono::time_point_cast<std::chrono::microseconds>(time).time_since_epoch().count();
+
+    // Randomize a random number 0 - 100 using the difference in microseconds
+    std::mt19937_64 rng(msec);
+    std::uniform_int_distribution<int> dist(std::get<0>(range), std::get<1>(range));
+    
+    // This is where the magic happens
+    double random_number = dist(rng);
+
+    return random_number;
+}
 int main()
 {
-    int fps = 165;
-    sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in Constant Torment :)");
+    int fps = 60;
+    float deltaTime = 1.f / fps;
+    float substeps = 10.f;
+    float subdt = deltaTime / substeps;
+
+    sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in a Constant Pendulum of Torment :)");
     window->setFramerateLimit(fps);
     sf::View view(window->getDefaultView());
     window->setView(view);
@@ -433,6 +481,20 @@ int main()
     float viscosity = 70;
     bool consume = false;
     bool explode = false;
+    bool teleportation = false;
+    bool particle_swap = false;
+    bool iridescent = false;
+    std::string type = "normal";
+
+    // Used for dividing easier
+    double percent_divisor = (1/100.f) * (1/float(fps)) * (1/substeps);
+
+    // Chances of certain abilities happening
+    double teleport_chance =   1.f * percent_divisor; // 1% chance per second
+    double swap_chance =       1.f * percent_divisor; // 1% chance per second
+    double iridescent_chance = 1.f * percent_divisor; // 1% chance per second
+
+    std::cout << swap_chance << std::endl;
 
     // Wind Garbage
     bool wind_enabled = false;
@@ -457,9 +519,6 @@ int main()
     std::vector<sf::Text*> texts = ui.texts;
     sf::CircleShape *particle_preview = ui.particle_preview;
 
-    float deltaTime = 1.f/fps;
-    float substeps = 10.f;
-    float subdt = deltaTime / substeps;
     bool r_dir = false;
     bool g_dir = true;
     bool b_dir = false;
@@ -512,14 +571,17 @@ int main()
                 
                 // Custom Particles 0 - 9 on keyboard
                 else if (event.key.code == 26) { // Consumed other particles
+                    // Particles with this property can "eat" other particles regardless of other properties.
                     consume = consume ? false : true;
+                    // TODO : Will this inherit the consumed particles properties? (it should logically)
                 }
-                else if (event.key.code == 27) { // Explodes into smaller particles
+                else if (event.key.code == 27) {
+                    // Explodes into smaller particles
                     // Particles explode into an undetermined amount of particles on contact if fast enough
                     explode = explode ? false : true;
                 }
-                else if (event.key.code == 28) { // Gives a particle negative mass
-                    // Negative Mass
+                else if (event.key.code == 28) {
+                    // Pretty Self Explanatory
                     mass = -mass;
                 }
                 else if (event.key.code == 29) {
@@ -533,16 +595,20 @@ int main()
                     // Magenetism
                 }
                 else if (event.key.code == 32) {
-                    // Teleportation
+                    // Spontaneous Teleportation within the quad tree bounds
+                    teleportation = teleportation ? false : true;
                 }
                 else if (event.key.code == 33) {
-                    // Particle Swap
+                    // Particles with this tag can swap with other particles that contain the particle_swap tag
+                    particle_swap = particle_swap ? false : true;
                 }
                 else if (event.key.code == 34) {
-
+                    // Spontaneously changes colors at random
+                    iridescent = iridescent ? false : true;
                 }
                 else if (event.key.code == 35) {
-
+                    // Heat Transfer
+                    type = (type == "fire") ? "normal" : "fire";
                 }
             }
             if (event.type == sf::Event::MouseButtonPressed) {
@@ -788,7 +854,6 @@ int main()
                             sf::Vector2f position(mouse.x + i, mouse.y + i);
 
                             sf::Color color;
-                            std::string type = "fire";
                             if (type != "fire") {
                                 if (rainbow_mode) { color = color_getter(red, green, blue, r_dir, g_dir, b_dir); }
                                 else { color = sf::Color(red, green, blue); }
@@ -804,7 +869,7 @@ int main()
                             // Updating the preview incase particles change colors willingly
                             particle_preview->setFillColor(sf::Color(red, green, blue));
 
-                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode);
+                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent);
                             particles->push_back(particle);
                         }
                         texts[0]->setString(std::to_string(red));
@@ -893,6 +958,45 @@ int main()
 
             update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
 
+            // Chances of particles using their abilities
+            for (int step = 0; step < particles->size(); step++) {
+
+                // Generates a random number from 0% - 100% using numbers 0 - 1...
+                //      according to frames, so 100% / 100 / fps / substeps = arbitrary fractional percentage.
+                float random_number = random_number_generator(fps, substeps);
+                
+                // Swaps random particles if there are more than 2 particles
+                //if (particles->size() > 1) {
+                //    
+                //    // Only swap if a particle is swappable
+                //    if ((*particles)[step]->swap) {
+                //        if (random_number * percent_divisor <= swap_chance) {
+                //            float random_particle = random_number_generator(fps, substeps, std::tuple<int, int>(0, particles->size() - 1));
+                //            std::cout << random_number << " : " << random_particle << std::endl;
+                //        }
+                //    }
+                //}
+
+                // Teleport Particles
+                if ((*particles)[step]->teleportation) {
+                    if (random_number * percent_divisor <= teleport_chance) {
+                        float random_x = random_number_generator(fps, substeps, std::tuple<int, int>(0, windowsize.x));
+                        float random_y = random_number_generator(fps, substeps, std::tuple<int, int>(0, windowsize.y));
+                        (*particles)[step]->particle->setPosition(random_x, random_y);
+                    }
+                }
+
+                // Iridescence Chance
+                if ((*particles)[step]->iridescent) {
+                    if (random_number * percent_divisor <= iridescent_chance) {
+                        float random_r = random_number_generator(fps, substeps, std::tuple<int, int>(0, 256));
+                        float random_g = random_number_generator(fps, substeps, std::tuple<int, int>(0, 256));
+                        float random_b = random_number_generator(fps, substeps, std::tuple<int, int>(0, 256));
+                        (*particles)[step]->particle->setFillColor(sf::Color(random_r, random_g, random_b));
+                    }
+                }
+            }
+
             // Wind Physics
             if (wind_enabled) wind_sim(particles, horizontal_blow, vertical_blow);
 
@@ -916,3 +1020,10 @@ int main()
     }
     return 0;
 }
+
+/*
+TODO LIST
+
+Be able to change particle type
+i.e Water and Fire
+*/
