@@ -32,7 +32,7 @@ https://cplusplus.com/reference/random/?kw=%3Crandom%3E
 int biggest_radius = 0;
 const float grav_const = 6.6743 * pow(10, -6);
 const float pi = 3.14159265;
-float gravity = 0.0f;
+float gravity = 9.81f;
 sf::Vector2f windowsize(1280, 720);
 sf::Vector2f quadtreesize(1280, 720);
 
@@ -315,6 +315,77 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                 v1->y -= impulse * m2 * vCollisionNorm.y;
                                 v2->x += impulse * m1 * vCollisionNorm.x;
                                 v2->y += impulse * m1 * vCollisionNorm.y;
+
+                                // Handles Explostions
+                                if ((*particles)[p_i]->explode) {
+
+                                    float private_speed = sqrt(v1->x * v1->x + v1->y * v1->y);
+                                    float radius = (*particles)[p_i]->radius;
+                                    float area = pi * pow(radius, 2);
+
+                                    int limit = 1;
+                                    while (true) {
+                                        float test_area = area / limit;
+                                        float test_radius = test_area / (pi * radius);
+                                        if (test_radius <= 1) break;
+                                        limit++;
+                                    }
+
+                                    int particle_amt = private_speed / 200;
+
+                                    // Chooses the smallest amount so we don't over-divide
+                                    particle_amt = (particle_amt > limit) ? limit: particle_amt;
+
+                                    // Splits the particle if it can split
+                                    if (particle_amt > 1) {
+                                        
+                                        area = area / particle_amt;
+                                        radius = sqrt(area / pi);
+                                        float mass = (*particles)[p_i]->mass / particle_amt;
+
+                                        remove_indices.push_back(p_i);
+                                        for (int n = 0; n < particle_amt; n++) {
+
+                                            Particle* new_particle = new Particle(radius, (*particles)[p_i]->particle->getPosition(), (*particles)[p_i]->particle->getFillColor(), (*particles)[p_i]->type, mass, sf::Vector2f((*particles)[p_i]->velocity->x, (*particles)[p_i]->velocity->y), (*particles)[p_i]->temperature, (*particles)[p_i]->viscosity, (*particles)[p_i]->consume, (*particles)[p_i]->explode, (*particles)[p_i]->teleportation, (*particles)[p_i]->swap, (*particles)[p_i]->iridescent);
+                                            particles->push_back(new_particle);
+                                        }
+                                    }
+                                }
+                                if (particle->explode) {
+
+                                    float private_speed = sqrt(v2->x * v2->x + v2->y * v2->y);
+                                    float radius = particle->radius;
+                                    float area = pi * pow(radius, 2);
+
+                                    int limit = 1;
+                                    while (true) {
+                                        float test_area = area / limit;
+                                        float test_radius = test_area / (pi * radius);
+                                        if (test_radius <= 1) break;
+                                        limit++;
+                                    }
+
+                                    int particle_amt = private_speed / 200;
+
+                                    // Chooses the smallest amount so we don't over-divide
+                                    particle_amt = (particle_amt > limit) ? limit : particle_amt;
+
+                                    if (particle_amt > 1) {
+
+                                        area = area / particle_amt;
+                                        radius = sqrt(area / pi);
+                                        float mass = (*particles)[p_i]->mass / particle_amt;
+
+                                        remove_indices.push_back(index);
+                                        for (int n = 0; n < particle_amt; n++) {
+                                            Particle* new_particle = new Particle(radius, particle->particle->getPosition(), particle->particle->getFillColor(), particle->type, mass, sf::Vector2f(particle->velocity->x, particle->velocity->y), particle->temperature, particle->viscosity, particle->consume, particle->explode, particle->teleportation, particle->swap, particle->iridescent);
+                                            particles->push_back(new_particle);
+                                        }
+
+                                        // If the main particle explodes, we don't want to use the original anymore
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
@@ -322,7 +393,6 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
             }
         }
     }
-
 
     if (remove_indices.size() > 0) {
         // Removes all the unwanted particles
@@ -489,12 +559,10 @@ int main()
     // Used for dividing easier
     double percent_divisor = (1/100.f) * (1/float(fps)) * (1/substeps);
 
-    // Chances of certain abilities happening
+    // Chances of certain abilities happening (1% is the lowest you can go for now)
     double teleport_chance =   1.f * percent_divisor; // 1% chance per second
     double swap_chance =       1.f * percent_divisor; // 1% chance per second
     double iridescent_chance = 1.f * percent_divisor; // 1% chance per second
-
-    std::cout << swap_chance << std::endl;
 
     // Wind Garbage
     bool wind_enabled = false;
@@ -573,7 +641,6 @@ int main()
                 else if (event.key.code == 26) { // Consumed other particles
                     // Particles with this property can "eat" other particles regardless of other properties.
                     consume = consume ? false : true;
-                    // TODO : Will this inherit the consumed particles properties? (it should logically)
                 }
                 else if (event.key.code == 27) {
                     // Explodes into smaller particles
@@ -927,7 +994,7 @@ int main()
                     if (curr_xy.x == pos.x && curr_xy.y == pos.y) {
                         pos.x++;
                         pos.y++;
-                        particle->particle->setPosition(pos.x, pos.y);
+                        particle->particle->setPosition(pos);
                     }
                     curr_xy = pos;
                 }
