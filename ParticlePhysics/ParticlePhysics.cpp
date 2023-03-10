@@ -1114,10 +1114,26 @@ int main()
                 // Iridescence Chance
                 if ((*particles)[step]->iridescent) {
                     if (random_number * percent_divisor <= iridescent_chance) {
-                        float random_r = random_number_generator(fps, substeps, std::tuple<int, int>(0, 256));
-                        float random_g = random_number_generator(fps, substeps, std::tuple<int, int>(0, 256));
-                        float random_b = random_number_generator(fps, substeps, std::tuple<int, int>(0, 256));
-                        (*particles)[step]->particle->setFillColor(sf::Color(random_r, random_g, random_b));
+                        // Chooses to shift red, green, or blue
+                        float color_choice = random_number_generator(fps, substeps, std::tuple<int, int>(1, 3));
+                        float color_shift =  random_number_generator(fps, substeps, std::tuple<int, int>(-35, 35));
+                        sf::Color part_color = (*particles)[step]->particle->getFillColor();
+                        if (color_choice == 1) {
+                            if      (part_color.r + color_shift < 0) color_shift = abs(color_shift);
+                            else if (part_color.r + color_shift > 255) color_shift = -color_shift;
+                            part_color.r += color_shift;
+                        }
+                        else if (color_choice == 2) {
+                            if      (part_color.g + color_shift < 0) color_shift = abs(color_shift);
+                            else if (part_color.g + color_shift > 255) color_shift = -color_shift;
+                            part_color.g += color_shift;
+                        }
+                        else if (color_choice == 3) {
+                            if      (part_color.b + color_shift < 0) color_shift = abs(color_shift);
+                            else if (part_color.b + color_shift > 255) color_shift = -color_shift;
+                            part_color.b += color_shift;
+                        }
+                        (*particles)[step]->particle->setFillColor(part_color);
                     }
                 }
             }
