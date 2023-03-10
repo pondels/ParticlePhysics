@@ -36,10 +36,7 @@ float gravity = 9.81f;
 sf::Vector2f windowsize(1280, 720);
 sf::Vector2f quadtreesize(1280, 720);
 
-int fps = 60;
-float substeps = 10.f;
-
-float random_number_generator(int fps, float substeps, std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
+float random_number_generator(std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
 
     // I googled a few methods. Chat GPT3 came in clutch with a better solution.
     // I tried looking for where it may have found this solution but genuinely found nothing.
@@ -297,11 +294,11 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
 
                         // Handles Radioactivity
                         if ((*particles)[p_i]->radioactive) {
-                            float random_number = random_number_generator(fps, substeps, std::tuple<int, int>(0, 700));
+                            float random_number = random_number_generator(std::tuple<int, int>(0, 700));
                             chernobyl_particle(particle, random_number);
                         }
                         if (particle->radioactive) {
-                            float random_number = random_number_generator(fps, substeps, std::tuple<int, int>(0, 700));
+                            float random_number = random_number_generator(std::tuple<int, int>(0, 700));
                             chernobyl_particle((*particles)[p_i], random_number);
                         }
 
@@ -574,6 +571,8 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
 }
 int main()
 {
+    int fps = 60;
+    float substeps = 10.f;
     float deltaTime = 1.f / fps;
     float subdt = deltaTime / substeps;
 
@@ -685,7 +684,7 @@ int main()
                 }
                 
                 // Custom Particles 0 - 9 on keyboard
-                else if (event.key.code == 26) { // Consumed other particles
+                else if (event.key.code == 26) {
                     // Particles with this property can "eat" other particles regardless of other properties.
                     consume = consume ? false : true;
                 }
@@ -1079,7 +1078,7 @@ int main()
 
                 // Generates a random number from 0% - 100% using numbers 0 - 1...
                 //      according to frames, so 100% / 100 / fps / substeps = arbitrary fractional percentage.
-                float random_number = random_number_generator(fps, substeps);
+                float random_number = random_number_generator();
                 
                 // Swaps random particles if there are more than 2 particles
                 if (particles->size() > 1) {
@@ -1087,7 +1086,7 @@ int main()
                     // Only swap if a particle is swappable
                     if ((*particles)[step]->swap) {
                         if (random_number * percent_divisor <= swap_chance) {
-                            float random_particle = random_number_generator(fps, substeps, std::tuple<int, int>(0, particles->size() - 1));
+                            float random_particle = random_number_generator(std::tuple<int, int>(0, particles->size() - 1));
                             if ((*particles)[random_particle]->swap) {
                                 sf::Vector2f pos1 =  (*particles)[step]->particle->getPosition();
                                 sf::Vector2f* vel1 = (*particles)[step]->velocity;
@@ -1105,8 +1104,8 @@ int main()
                 // Teleport Particles
                 if ((*particles)[step]->teleportation) {
                     if (random_number * percent_divisor <= teleport_chance) {
-                        float random_x = random_number_generator(fps, substeps, std::tuple<int, int>(0, windowsize.x));
-                        float random_y = random_number_generator(fps, substeps, std::tuple<int, int>(0, windowsize.y));
+                        float random_x = random_number_generator(std::tuple<int, int>(0, windowsize.x));
+                        float random_y = random_number_generator(std::tuple<int, int>(0, windowsize.y));
                         (*particles)[step]->particle->setPosition(random_x, random_y);
                     }
                 }
@@ -1115,8 +1114,8 @@ int main()
                 if ((*particles)[step]->iridescent) {
                     if (random_number * percent_divisor <= iridescent_chance) {
                         // Chooses to shift red, green, or blue
-                        float color_choice = random_number_generator(fps, substeps, std::tuple<int, int>(1, 3));
-                        float color_shift =  random_number_generator(fps, substeps, std::tuple<int, int>(-35, 35));
+                        float color_choice = random_number_generator(std::tuple<int, int>(1, 3));
+                        float color_shift =  random_number_generator(std::tuple<int, int>(-35, 35));
                         sf::Color part_color = (*particles)[step]->particle->getFillColor();
                         if (color_choice == 1) {
                             if      (part_color.r + color_shift < 0) color_shift = abs(color_shift);
