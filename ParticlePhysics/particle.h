@@ -20,15 +20,15 @@ public:
 	bool teleportation;
 	bool swap;
 	bool iridescent;
+	bool radioactive;
 
 	Particle() = default;
-	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons, bool xplod, bool teleport, bool particle_swap, bool iridescence) {
+	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons, bool xplod, bool teleport, bool particle_swap, bool iridescence, bool is_radioactive) {
 		particle = new sf::CircleShape(size);
 		particle->setPosition(position);
 		particle->setOrigin(size, size);
 		particle->setFillColor(color);
 
-		static const int DIM = 2;
 		mass = particle_mass;
 		velocity = new sf::Vector2f(v.x, v.y);
 		radius = size;
@@ -40,6 +40,7 @@ public:
 		teleportation = teleport;
 		swap = particle_swap;
 		iridescent = iridescence;
+		radioactive = is_radioactive;
 	}
 	~Particle() {
 		delete particle;

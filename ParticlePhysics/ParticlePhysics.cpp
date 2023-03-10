@@ -36,7 +36,29 @@ float gravity = 9.81f;
 sf::Vector2f windowsize(1280, 720);
 sf::Vector2f quadtreesize(1280, 720);
 
-float dot(sf::Vector2f a, sf::Vector2f b) {
+int fps = 60;
+float substeps = 10.f;
+
+float random_number_generator(int fps, float substeps, std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
+
+    // I googled a few methods. Chat GPT3 came in clutch with a better solution.
+    // I tried looking for where it may have found this solution but genuinely found nothing.
+    // Closest I found was from the cplusplus site, so I linked that
+
+    // Grabs the time and converts the time to microsecond transfer
+    auto time = std::chrono::system_clock::now();
+    auto msec = std::chrono::time_point_cast<std::chrono::microseconds>(time).time_since_epoch().count();
+
+    // Randomize a random number 0 - 100 using the difference in microseconds
+    std::mt19937_64 rng(msec);
+    std::uniform_int_distribution<int> dist(std::get<0>(range), std::get<1>(range));
+
+    // This is where the magic happens
+    double random_number = dist(rng);
+
+    return random_number;
+}
+float dots(sf::Vector2f a, sf::Vector2f b) {
     return a.x * b.x + a.y * b.y;
 }
 sf::Color fire_color_updater(float temp) {
@@ -79,6 +101,41 @@ sf::Color fire_color_updater(float temp) {
 
     sf::Color particle_color = sf::Color(R, G, B);
     return particle_color;
+}
+void chernobyl_particle(Particle* particle, int number) {
+
+    //      Makes a particle smaller upon impact
+    //      Makes a particle less dense upon impact
+    //      Makes a particle radioactive upon impact - spreads like the plague
+    //      Can activate and deactivate certain abilities in a particle
+
+    switch (number) {
+
+    // Shrinks Particle
+    case 0: {
+        float radius = particle->radius;
+        if (radius > 2) {
+            radius--;
+            particle->radius = radius;
+            particle->particle->setRadius(radius);
+            particle->particle->setOrigin(radius, radius);
+        }
+    }
+
+    // Makes particle less dense
+    case 100: particle->mass--;
+
+    // Makes particle radioactive
+    case 200: particle->radioactive = true;
+    
+    // Everything below messes with abilities and properties
+    case 300:  particle->type = (particle->type == "fire") ? "normal" : "fire";
+    case 400:  particle->temperature += 10;
+    case 500:  particle->swap = (particle->swap) ? false : true;
+    case 600:  particle->iridescent = (particle->iridescent) ? false : true;
+    case 700:  particle->consume = (particle->consume) ? false : true;
+    }
+
 }
 void inherit_properties(Particle* particle1, Particle* particle2) {
 
@@ -238,6 +295,16 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                     float squaredistance = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
                     if (squaredistance < ((r1 + r2) * (r1 + r2)) && squaredistance != 0) {
 
+                        // Handles Radioactivity
+                        if ((*particles)[p_i]->radioactive) {
+                            float random_number = random_number_generator(fps, substeps, std::tuple<int, int>(0, 700));
+                            chernobyl_particle(particle, random_number);
+                        }
+                        if (particle->radioactive) {
+                            float random_number = random_number_generator(fps, substeps, std::tuple<int, int>(0, 700));
+                            chernobyl_particle((*particles)[p_i], random_number);
+                        }
+
                         // Particle should be consumed
                         if (particle->consume || (*particles)[p_i]->consume) {
 
@@ -346,7 +413,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                         remove_indices.push_back(p_i);
                                         for (int n = 0; n < particle_amt; n++) {
 
-                                            Particle* new_particle = new Particle(radius, (*particles)[p_i]->particle->getPosition(), (*particles)[p_i]->particle->getFillColor(), (*particles)[p_i]->type, mass, sf::Vector2f((*particles)[p_i]->velocity->x, (*particles)[p_i]->velocity->y), (*particles)[p_i]->temperature, (*particles)[p_i]->viscosity, (*particles)[p_i]->consume, (*particles)[p_i]->explode, (*particles)[p_i]->teleportation, (*particles)[p_i]->swap, (*particles)[p_i]->iridescent);
+                                            Particle* new_particle = new Particle(radius, (*particles)[p_i]->particle->getPosition(), (*particles)[p_i]->particle->getFillColor(), (*particles)[p_i]->type, mass, sf::Vector2f((*particles)[p_i]->velocity->x, (*particles)[p_i]->velocity->y), (*particles)[p_i]->temperature, (*particles)[p_i]->viscosity, (*particles)[p_i]->consume, (*particles)[p_i]->explode, (*particles)[p_i]->teleportation, (*particles)[p_i]->swap, (*particles)[p_i]->iridescent, (*particles)[p_i]->radioactive);
                                             particles->push_back(new_particle);
                                         }
                                     }
@@ -378,7 +445,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
 
                                         remove_indices.push_back(index);
                                         for (int n = 0; n < particle_amt; n++) {
-                                            Particle* new_particle = new Particle(radius, particle->particle->getPosition(), particle->particle->getFillColor(), particle->type, mass, sf::Vector2f(particle->velocity->x, particle->velocity->y), particle->temperature, particle->viscosity, particle->consume, particle->explode, particle->teleportation, particle->swap, particle->iridescent);
+                                            Particle* new_particle = new Particle(radius, particle->particle->getPosition(), particle->particle->getFillColor(), particle->type, mass, sf::Vector2f(particle->velocity->x, particle->velocity->y), particle->temperature, particle->viscosity, particle->consume, particle->explode, particle->teleportation, particle->swap, particle->iridescent, particle->radioactive);
                                             particles->push_back(new_particle);
                                         }
 
@@ -505,30 +572,9 @@ bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size)
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
     return false;
 }
-float random_number_generator(int fps, float substeps, std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
-    
-    // I googled a few methods. Chat GPT3 came in clutch with a better solution.
-    // I tried looking for where it may have found this solution but genuinely found nothing.
-    // Closest I found was from the cplusplus site, so I linked that
-
-    // Grabs the time and converts the time to microsecond transfer
-    auto time = std::chrono::system_clock::now();
-    auto msec = std::chrono::time_point_cast<std::chrono::microseconds>(time).time_since_epoch().count();
-
-    // Randomize a random number 0 - 100 using the difference in microseconds
-    std::mt19937_64 rng(msec);
-    std::uniform_int_distribution<int> dist(std::get<0>(range), std::get<1>(range));
-    
-    // This is where the magic happens
-    double random_number = dist(rng);
-
-    return random_number;
-}
 int main()
 {
-    int fps = 60;
     float deltaTime = 1.f / fps;
-    float substeps = 10.f;
     float subdt = deltaTime / substeps;
 
     sf::RenderWindow* window = new sf::RenderWindow(sf::VideoMode(windowsize.x, windowsize.y), "My Life is in a Constant Pendulum of Torment :)");
@@ -554,6 +600,7 @@ int main()
     bool teleportation = false;
     bool particle_swap = false;
     bool iridescent = false;
+    bool radioactive = false;
     std::string type = "normal";
 
     // Used for dividing easier
@@ -653,13 +700,15 @@ int main()
                 }
                 else if (event.key.code == 29) {
                     // Electricity?
+
                 }
                 else if (event.key.code == 30) {
-                    // Radioactive
-                    
+                    // Explained in chernobyl_particle()
+                    radioactive = radioactive ? false : true;
                 }
                 else if (event.key.code == 31) {
                     // Magenetism
+
                 }
                 else if (event.key.code == 32) {
                     // Spontaneous Teleportation within the quad tree bounds
@@ -936,7 +985,7 @@ int main()
                             // Updating the preview incase particles change colors willingly
                             particle_preview->setFillColor(sf::Color(red, green, blue));
 
-                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent);
+                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent, radioactive);
                             particles->push_back(particle);
                         }
                         texts[0]->setString(std::to_string(red));
@@ -1033,16 +1082,25 @@ int main()
                 float random_number = random_number_generator(fps, substeps);
                 
                 // Swaps random particles if there are more than 2 particles
-                //if (particles->size() > 1) {
-                //    
-                //    // Only swap if a particle is swappable
-                //    if ((*particles)[step]->swap) {
-                //        if (random_number * percent_divisor <= swap_chance) {
-                //            float random_particle = random_number_generator(fps, substeps, std::tuple<int, int>(0, particles->size() - 1));
-                //            std::cout << random_number << " : " << random_particle << std::endl;
-                //        }
-                //    }
-                //}
+                if (particles->size() > 1) {
+                    
+                    // Only swap if a particle is swappable
+                    if ((*particles)[step]->swap) {
+                        if (random_number * percent_divisor <= swap_chance) {
+                            float random_particle = random_number_generator(fps, substeps, std::tuple<int, int>(0, particles->size() - 1));
+                            if ((*particles)[random_particle]->swap) {
+                                sf::Vector2f pos1 =  (*particles)[step]->particle->getPosition();
+                                sf::Vector2f* vel1 = (*particles)[step]->velocity;
+                                sf::Vector2f pos2 =  (*particles)[random_particle]->particle->getPosition();
+                                sf::Vector2f* vel2 = (*particles)[random_particle]->velocity;
+                                (*particles)[step]->particle->setPosition(pos2);
+                                (*particles)[random_particle]->particle->setPosition(pos1);
+                                (*particles)[step]->velocity = vel2;
+                                (*particles)[random_particle]->velocity = vel1;
+                            }
+                        }
+                    }
+                }
 
                 // Teleport Particles
                 if ((*particles)[step]->teleportation) {
@@ -1090,7 +1148,4 @@ int main()
 
 /*
 TODO LIST
-
-Be able to change particle type
-i.e Water and Fire
 */
