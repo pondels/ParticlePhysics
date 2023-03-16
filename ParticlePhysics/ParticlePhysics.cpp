@@ -222,7 +222,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
 
     // Rate at which energy is lost against the wall/floor
     float restitution = .9 - (particle->viscosity/500);
-    float friction = 0.9 + 0.099 * (1 - particle->viscosity / 500);
+    float friction = 0.9 + 0.099 * (1.f - particle->viscosity / 500.f);
 
     float radius = shape->getGlobalBounds().height / 2;
     float particlex = shape->getPosition().x;
@@ -565,10 +565,6 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
     float y = convert_y(coordinates.y);
     return sf::Vector2f(x, y);
 }
-bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
-    if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
-    return false;
-}
 int main()
 {
     int fps = 60;
@@ -627,7 +623,7 @@ int main()
     std::string UI_render_type = "closed";
     UserInterface ui(windowsize);
     ui.create_UI(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature);
-    std::vector<std::vector<sf::RectangleShape>> UI_vectors = ui.vectors;
+    std::vector<std::vector<sf::RectangleShape*>> UI_vectors = ui.vectors;
 
     std::vector<Particle*>* particles = new std::vector<Particle*>;
     std::vector<sf::Text*> texts = ui.texts;
@@ -732,202 +728,10 @@ int main()
                 sf::Vector2i mouse = sf::Vector2i(mouse_conv.x, mouse_conv.y);
 
                 int eventtype = -1;
-                if (UI_render_type == "closed") {
+                bool ui_collision = ui.check_collision(UI_render_type, eventtype, mouse, red, green, blue, start_vel_x, start_vel_y, \
+                    mass, radius, modifier, particle_amount, temperature, rainbow_mode, viscosity, horizontal_blow, vertical_blow, gravity);
 
-                    // Check if they are wanting to open the window
-                    for (int i = 0; i < UI_vectors[0].size(); i++) {
-                        sf::Vector2f size = UI_vectors[0][i].getSize();
-                        sf::Vector2f pos = UI_vectors[0][i].getPosition();
-                        if (mouse_collide(mouse, pos, size)) {
-                            UI_render_type = "open";
-                            for (int object = 0; object < UI_vectors.size(); object++) {
-                                for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                                    sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
-                                    UI_vectors[object][rectangle].setPosition(pos.x - convert_x(400), pos.y);
-                                }
-                            }
-                            for (int object = 0; object < texts.size(); object++) {
-                                sf::Vector2f pos = texts[object]->getPosition();
-                                texts[object]->setPosition(pos.x - convert_x(400), pos.y);
-                            }
-                            sf::Vector2f pp_pos = particle_preview->getPosition();
-                            particle_preview->setPosition(pp_pos.x - convert_x(400), pp_pos.y);
-                            eventtype = i;
-                            break;
-                        }
-                    }
-                }
-                else {
-                    for (int i = 0; i < UI_vectors.size(); i++) {
-                        // Check if they are wanting to close the window
-                        for (int j = 0; j < UI_vectors[i].size(); j++) {
-                            sf::Vector2f size = UI_vectors[i][j].getSize();
-                            sf::Vector2f pos = UI_vectors[i][j].getPosition();
-                            if (i == 0) {
-                                if (mouse_collide(mouse, pos, size)) {
-                                    UI_render_type = "closed";
-                                    for (int object = 0; object < UI_vectors.size(); object++) {
-                                        for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                                            sf::Vector2f pos = UI_vectors[object][rectangle].getPosition();
-                                            UI_vectors[object][rectangle].setPosition(pos.x + convert_x(400), pos.y);
-                                        }
-                                    }
-                                    for (int object = 0; object < texts.size(); object++) {
-                                        sf::Vector2f pos = texts[object]->getPosition();
-                                        texts[object]->setPosition(pos.x + convert_x(400), pos.y);
-                                    }
-                                    sf::Vector2f pp_pos = particle_preview->getPosition();
-                                    particle_preview->setPosition(pp_pos.x + convert_x(400), pp_pos.y);
-                                    eventtype = i;
-                                    break;
-                                }
-                            }
-                            else if (i == 1) {
-                                if (mouse_collide(mouse, pos, size)) {
-                                    eventtype = 1;
-                                }
-                            }
-                            else if (i == 2) {
-                                // Adjusting Red
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { red -= modifier; }
-                                    else if (j == 2) { red += modifier; }
-                                    if (red > 255) { red = 255; }
-                                    if (red < 0) { red = 0; }
-                                    particle_preview->setFillColor(sf::Color(red, green, blue));
-                                    texts[0]->setString(std::to_string(red));
-                                    eventtype = 2;
-                                }
-                            }
-                            else if (i == 3) {
-                                // Adjusting Green
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { green -= modifier; }
-                                    else if (j == 2) { green += modifier; }
-                                    if (green > 255) { green = 255; }
-                                    if (green < 0) { green = 0; }
-                                    particle_preview->setFillColor(sf::Color(red, green, blue));
-                                    texts[1]->setString(std::to_string(green));
-                                    eventtype = 3;
-                                }
-                            }
-                            else if (i == 4) {
-                                // Adjusting Blue
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { blue -= modifier; }
-                                    else if (j == 2) { blue += modifier; }
-                                    if (blue > 255) { blue = 255; }
-                                    if (blue < 0) { blue = 0; }
-                                    particle_preview->setFillColor(sf::Color(red, green, blue));
-                                    texts[2]->setString(std::to_string(blue));
-                                    eventtype = 4;
-                                }
-                            }
-                            else if (i == 5) {
-                                // Adjusting The Radius
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0 && radius > 1) { radius -= modifier; }
-                                    else if (j == 2) { radius += modifier; }
-                                    if (radius < 1) { radius = 1; }
-                                    if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
-                                    particle_preview->setRadius(radius);
-                                    particle_preview->setPosition(convert_resolution(sf::Vector2f(1730 - radius, 70 - radius)));
-                                    texts[3]->setString(std::to_string(radius));
-                                    eventtype = 5;
-                                }
-                            }
-                            else if (i == 6) {
-                                // Adjusting The Mass
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { mass -= modifier; }
-                                    else if (j == 2) { mass += modifier; }
-                                    if (mass < 1) { mass = 1; }
-                                    texts[4]->setString(std::to_string(mass));
-                                    eventtype = 6;
-                                }
-                            }
-                            else if (i == 7) {
-                                // Adjusting The Velocity
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { start_vel_x -= modifier; }
-                                    else if (j == 2) { start_vel_x += modifier; }
-                                    else if (j == 3) { start_vel_y -= modifier; }
-                                    else if (j == 5) { start_vel_y += modifier; }
-                                    texts[5]->setString(std::to_string(start_vel_x));
-                                    texts[6]->setString(std::to_string(start_vel_y));
-                                    eventtype = 7;
-                                }
-                            }
-                            else if (i == 8) {
-                                // Adjusting The Number of Particles to Spawn
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { particle_amount -= modifier; }
-                                    else if (j == 2) { particle_amount += modifier; }
-                                    if (particle_amount < 1) { particle_amount = 1; }
-                                    texts[7]->setString(std::to_string(particle_amount));
-                                    eventtype = 8;
-                                }
-                            }
-                            else if (i == 9) {
-                                // Adjusting The Number of Particles to Spawn
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { modifier--; }
-                                    else if (j == 2) { modifier++; }
-                                    if (modifier < 1) { modifier = 1; }
-                                    texts[8]->setString(std::to_string(modifier));
-                                    eventtype = 9;
-                                }
-                            }
-                            else if (i == 10) {
-                                // Adjusting The Number of Particles to Spawn
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { gravity -= .01 * modifier; }
-                                    else if (j == 2) { gravity += .01 * modifier; }
-                                    if (gravity < 0) { gravity = 0; }
-                                    texts[9]->setString(std::to_string(gravity));
-                                    eventtype = 10;
-                                }
-                            }
-                            else if (i == 11) {
-                                // Adjusting The Number of Particles to Spawn
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) {
-                                        if (rainbow_mode) {
-                                            rainbow_mode = false;
-                                            UI_vectors[11][j].setFillColor(sf::Color(215, 215, 185));
-                                        }
-                                        else {
-                                            rainbow_mode = true;
-                                            UI_vectors[11][j].setFillColor(sf::Color(215, 215, 0));
-                                        }
-                                    }
-                                    eventtype = 11;
-                                }
-                            }
-                            else if (i == 12) {
-                                // Adjusting The Particle's Temperature
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { temperature -= modifier; }
-                                    else if (j == 2) { temperature += modifier; }
-                                    if (temperature < 0) temperature = 0;
-                                    texts[10]->setString(std::to_string(temperature));
-                                    eventtype = 12;
-                                }
-                            }
-                            else if (i == 13) {
-                                // Adjusting the Wind values
-                                if (mouse_collide(mouse, pos, size)) {
-                                    if (j == 0) { horizontal_blow--; }
-                                    if (j == 2) { horizontal_blow++; }
-                                    if (j == 3) { vertical_blow--; }
-                                    if (j == 5) { vertical_blow++; }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (eventtype == -1) {
+                if (!ui_collision) {
 
                     if (draw_line) {
                         
@@ -1086,7 +890,7 @@ int main()
                     // Only swap if a particle is swappable
                     if ((*particles)[step]->swap) {
                         if (random_number * percent_divisor <= swap_chance) {
-                            float random_particle = random_number_generator(std::tuple<int, int>(0, particles->size() - 1));
+                            float random_particle = random_number_generator(std::tuple<int, int>(0, int(particles->size() - 1)));
                             if ((*particles)[random_particle]->swap) {
                                 sf::Vector2f pos1 =  (*particles)[step]->particle->getPosition();
                                 sf::Vector2f* vel1 = (*particles)[step]->velocity;
@@ -1104,8 +908,8 @@ int main()
                 // Teleport Particles
                 if ((*particles)[step]->teleportation) {
                     if (random_number * percent_divisor <= teleport_chance) {
-                        float random_x = random_number_generator(std::tuple<int, int>(0, windowsize.x));
-                        float random_y = random_number_generator(std::tuple<int, int>(0, windowsize.y));
+                        float random_x = random_number_generator(std::tuple<int, int>(0, int(windowsize.x)));
+                        float random_y = random_number_generator(std::tuple<int, int>(0, int(windowsize.y)));
                         (*particles)[step]->particle->setPosition(random_x, random_y);
                     }
                 }
@@ -1143,7 +947,7 @@ int main()
             // Draws the particle UI
             for (int object = 0; object < UI_vectors.size(); object++) {
                 for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                    window->draw(UI_vectors[object][rectangle]);
+                    window->draw((*UI_vectors[object][rectangle]));
                     if (object == 1 && rectangle == UI_vectors[object].size() - 1) window->draw(*particle_preview);
                 }
             }
