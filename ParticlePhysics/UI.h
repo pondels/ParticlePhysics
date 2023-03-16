@@ -10,7 +10,7 @@ public:
 	sf::Vector2f windowsize;
 	std::vector<std::vector<sf::RectangleShape*>> vectors;
 	std::vector<sf::Text*> texts;
-	sf::CircleShape* particle_preview = new sf::CircleShape;
+	std::vector<sf::CircleShape*> preview_particles;
 	sf::Font font;
 
 	UserInterface(sf::Vector2f);
@@ -19,7 +19,9 @@ public:
 	sf::Vector2f convert_resolution(sf::Vector2f);
 	sf::RectangleShape* make_bar(sf::Vector2f, sf::Color, sf::Vector2f);
 	bool check_collision(std::string&, int, sf::Vector2i, int&, int&, int&, int&, int&,
-		int&, int&, int&, int&, int&, bool&, float&, float&, float&, float&);
+		int&, int&, int&, int&, int&, bool&, float&, float&, float&, float&, bool&, bool&, bool&,
+		bool&, bool&, bool&, bool&, bool&, bool&, bool&,
+		std::string&);
 	void create_UI(int, int, int, int, int, int, int, int, int, float, int);
 	void PictureDisplay();
 	void TextDisplay(int, int, int, int, int, int, int, int, int, float, int);

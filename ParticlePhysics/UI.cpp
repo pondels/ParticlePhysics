@@ -1,4 +1,5 @@
 #include "UI.h"
+#include <iostream>
 
 UserInterface::UserInterface(sf::Vector2f ws) {
     windowsize = ws;
@@ -31,212 +32,235 @@ void custom_message(sf::Text* message, sf::Vector2f position) {
     message->setFillColor(sf::Color::Black);
     message->setPosition(position);
 }
-bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, sf::Vector2i mouse, int& red, int& green, int& blue, int& vel_x, int& vel_y, 
-    int& mass, int& radius, int& modifier, int& particle_amount, int& temperature, bool& rainbow_mode, float& viscosity, float& h_blow, float& v_blow, float& gravity) {
-    
-    /*
-    bool consume = false;
-    bool explode = false;
-    bool teleportation = false;
-    bool particle_swap = false;
-    bool iridescent = false;
-    bool radioactive = false;*/
+bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, sf::Vector2i mouse, int& red, int& green, int& blue, int& vel_x, int& vel_y,
+    int& mass, int& radius, int& modifier, int& particle_amount, int& temperature, bool& rainbow_mode, float& viscosity, float& h_blow, float& v_blow, float& gravity,
+    bool& draw_particles, bool& draw_line, bool& draw_curve, bool& wind_enabled, bool& consume, bool& explode, bool& radioactive, bool& teleportation, bool& particle_swap,
+    bool& iridescent, std::string& type) {
 
-    // User wants to open the particle window
-    if (UI_render_type == "closed") {
+    sf::Color inactive(75, 75, 75);
+    sf::Color active(75, 150, 75);
 
-        // Check if they are wanting to open the window
-        for (int i = 0; i < vectors[0].size(); i++) {
-            sf::Vector2f size = vectors[0][i]->getSize();
-            sf::Vector2f pos = vectors[0][i]->getPosition();
+    int shift = 0;
+
+    if (UI_render_type == "closed") shift = -400;
+    else shift = 400;
+
+    for (int i = 0; i < vectors.size(); i++) {
+
+        // Check if they are wanting to close the window
+        for (int j = 0; j < vectors[i].size(); j++) {
+            sf::Vector2f size = vectors[i][j]->getSize();
+            sf::Vector2f pos = vectors[i][j]->getPosition();
             if (mouse_collide(mouse, pos, size)) {
-                UI_render_type = "open";
-
-                // Moving Images
-                for (int object = 0; object < vectors.size(); object++) {
-                    for (int rectangle = 0; rectangle < vectors[object].size(); rectangle++) {
-                        sf::Vector2f pos = vectors[object][rectangle]->getPosition();
-                        vectors[object][rectangle]->setPosition(pos.x - convert_x(400), pos.y);
-                    }
-                }
-
-                // Moving Text
-                for (int object = 0; object < texts.size(); object++) {
-                    sf::Vector2f pos = texts[object]->getPosition();
-                    texts[object]->setPosition(pos.x - convert_x(400), pos.y);
-                }
-                sf::Vector2f pp_pos = particle_preview->getPosition();
-                particle_preview->setPosition(pp_pos.x - convert_x(400), pp_pos.y);
-                eventtype = i;
-            }
-        }
-    }
-    else {
-        for (int i = 0; i < vectors.size(); i++) {
-            // Check if they are wanting to close the window
-            for (int j = 0; j < vectors[i].size(); j++) {
-                sf::Vector2f size = vectors[i][j]->getSize();
-                sf::Vector2f pos = vectors[i][j]->getPosition();
                 if (i == 0) {
-                    if (mouse_collide(mouse, pos, size)) {
-                        UI_render_type = "closed";
-                        for (int object = 0; object < vectors.size(); object++) {
-                            for (int rectangle = 0; rectangle < vectors[object].size(); rectangle++) {
-                                sf::Vector2f pos = vectors[object][rectangle]->getPosition();
-                                vectors[object][rectangle]->setPosition(pos.x + convert_x(400), pos.y);
-                            }
+                    UI_render_type = (UI_render_type == "closed") ? "open" : "closed";
+                    for (int object = 0; object < 14; object++) {
+                        for (int rectangle = 0; rectangle < vectors[object].size(); rectangle++) {
+                            sf::Vector2f pos = vectors[object][rectangle]->getPosition();
+                            vectors[object][rectangle]->setPosition(pos.x + convert_x(shift), pos.y);
                         }
-                        for (int object = 0; object < texts.size(); object++) {
-                            sf::Vector2f pos = texts[object]->getPosition();
-                            texts[object]->setPosition(pos.x + convert_x(400), pos.y);
-                        }
-                        sf::Vector2f pp_pos = particle_preview->getPosition();
-                        particle_preview->setPosition(pp_pos.x + convert_x(400), pp_pos.y);
-                        eventtype = i;
                     }
+                    for (int object = 0; object < texts.size(); object++) {
+                        sf::Vector2f pos = texts[object]->getPosition();
+                        texts[object]->setPosition(pos.x + convert_x(shift), pos.y);
+                    }
+                    sf::Vector2f pp_pos = preview_particles[0]->getPosition();
+                    preview_particles[0]->setPosition(pp_pos.x + convert_x(shift), pp_pos.y);
+                    eventtype = i;
                 }
                 else if (i == 1) {
-                    // Colliding with background
-                    if (mouse_collide(mouse, pos, size)) {
-                        eventtype = 1;
-                    }
+                    // Colliding with background | Nothing Happens
                 }
                 else if (i == 2) {
                     // Adjusting Red
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { red -= modifier; }
-                        else if (j == 2) { red += modifier; }
-                        if (red > 255) { red = 255; }
-                        if (red < 0) { red = 0; }
-                        particle_preview->setFillColor(sf::Color(red, green, blue));
-                        texts[0]->setString(std::to_string(red));
-                        eventtype = 2;
-                    }
+                    if (j == 0) { red -= modifier; }
+                    else if (j == 2) { red += modifier; }
+                    if (red > 255) { red = 255; }
+                    if (red < 0) { red = 0; }
+                    preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                    texts[0]->setString(std::to_string(red));
                 }
                 else if (i == 3) {
                     // Adjusting Green
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { green -= modifier; }
-                        else if (j == 2) { green += modifier; }
-                        if (green > 255) { green = 255; }
-                        if (green < 0) { green = 0; }
-                        particle_preview->setFillColor(sf::Color(red, green, blue));
-                        texts[1]->setString(std::to_string(green));
-                        eventtype = 3;
-                    }
+                    if (j == 0) { green -= modifier; }
+                    else if (j == 2) { green += modifier; }
+                    if (green > 255) { green = 255; }
+                    if (green < 0) { green = 0; }
+                    preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                    texts[1]->setString(std::to_string(green));
                 }
                 else if (i == 4) {
                     // Adjusting Blue
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { blue -= modifier; }
-                        else if (j == 2) { blue += modifier; }
-                        if (blue > 255) { blue = 255; }
-                        if (blue < 0) { blue = 0; }
-                        particle_preview->setFillColor(sf::Color(red, green, blue));
-                        texts[2]->setString(std::to_string(blue));
-                        eventtype = 4;
-                    }
+                    if (j == 0) { blue -= modifier; }
+                    else if (j == 2) { blue += modifier; }
+                    if (blue > 255) { blue = 255; }
+                    if (blue < 0) { blue = 0; }
+                    preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                    texts[2]->setString(std::to_string(blue));
                 }
                 else if (i == 5) {
                     // Adjusting The Radius
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0 && radius > 1) { radius -= modifier; }
-                        else if (j == 2) { radius += modifier; }
-                        if (radius < 1) { radius = 1; }
-                        if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
-                        particle_preview->setRadius(radius);
-                        particle_preview->setPosition(convert_resolution(sf::Vector2f(1730 - radius, 70 - radius)));
-                        texts[3]->setString(std::to_string(radius));
-                        eventtype = 5;
-                    }
+                    if (j == 0 && radius > 1) { radius -= modifier; }
+                    else if (j == 2) { radius += modifier; }
+                    if (radius < 1) { radius = 1; }
+                    if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
+                    preview_particles[0]->setRadius(radius);
+                    preview_particles[0]->setPosition(convert_resolution(sf::Vector2f(1730 - radius, 70 - radius)));
+                    texts[3]->setString(std::to_string(radius));
                 }
                 else if (i == 6) {
                     // Adjusting The Mass
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { mass -= modifier; }
-                        else if (j == 2) { mass += modifier; }
-                        if (mass < 1) { mass = 1; }
-                        texts[4]->setString(std::to_string(mass));
-                        eventtype = 6;
-                    }
+                    if (j == 0) { mass -= modifier; }
+                    else if (j == 2) { mass += modifier; }
+                    if (mass < 1) { mass = 1; }
+                    texts[4]->setString(std::to_string(mass));
                 }
                 else if (i == 7) {
                     // Adjusting The Velocity
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { vel_x -= modifier; }
-                        else if (j == 2) { vel_x += modifier; }
-                        else if (j == 3) { vel_y -= modifier; }
-                        else if (j == 5) { vel_y += modifier; }
-                        texts[5]->setString(std::to_string(vel_x));
-                        texts[6]->setString(std::to_string(vel_y));
-                        eventtype = 7;
-                    }
+                    if (j == 0) { vel_x -= modifier; }
+                    else if (j == 2) { vel_x += modifier; }
+                    else if (j == 3) { vel_y -= modifier; }
+                    else if (j == 5) { vel_y += modifier; }
+                    texts[5]->setString(std::to_string(vel_x));
+                    texts[6]->setString(std::to_string(vel_y));
                 }
                 else if (i == 8) {
                     // Adjusting The Number of Particles to Spawn
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { particle_amount -= modifier; }
-                        else if (j == 2) { particle_amount += modifier; }
-                        if (particle_amount < 1) { particle_amount = 1; }
-                        texts[7]->setString(std::to_string(particle_amount));
-                        eventtype = 8;
-                    }
+                    if (j == 0) { particle_amount -= modifier; }
+                    else if (j == 2) { particle_amount += modifier; }
+                    if (particle_amount < 1) { particle_amount = 1; }
+                    texts[7]->setString(std::to_string(particle_amount));
                 }
                 else if (i == 9) {
                     // Adjusting The Number of Particles to Spawn
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { modifier--; }
-                        else if (j == 2) { modifier++; }
-                        if (modifier < 1) { modifier = 1; }
-                        texts[8]->setString(std::to_string(modifier));
-                        eventtype = 9;
-                    }
+                    if (j == 0) { modifier--; }
+                    else if (j == 2) { modifier++; }
+                    if (modifier < 1) { modifier = 1; }
+                    texts[8]->setString(std::to_string(modifier));
                 }
                 else if (i == 10) {
                     // Adjusting The Number of Particles to Spawn
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { gravity -= .01 * modifier; }
-                        else if (j == 2) { gravity += .01 * modifier; }
-                        if (gravity < 0) { gravity = 0; }
-                        texts[9]->setString(std::to_string(gravity));
-                        eventtype = 10;
-                    }
+                    if (j == 0) { gravity -= .01 * modifier; }
+                    else if (j == 2) { gravity += .01 * modifier; }
+                    if (gravity < 0) { gravity = 0; }
+                    texts[9]->setString(std::to_string(gravity));
                 }
                 else if (i == 11) {
                     // Adjusting The Number of Particles to Spawn
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) {
-                            if (rainbow_mode) {
-                                rainbow_mode = false;
-                                vectors[11][j]->setFillColor(sf::Color(215, 215, 185));
-                            }
-                            else {
-                                rainbow_mode = true;
-                                vectors[11][j]->setFillColor(sf::Color(215, 215, 0));
-                            }
+                    if (j == 0) {
+                        if (rainbow_mode) {
+                            rainbow_mode = false;
+                            vectors[11][j]->setFillColor(sf::Color(215, 215, 185));
                         }
-                        eventtype = 11;
+                        else {
+                            rainbow_mode = true;
+                            vectors[11][j]->setFillColor(sf::Color(215, 215, 0));
+                        }
                     }
                 }
                 else if (i == 12) {
                     // Adjusting The Particle's Temperature
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { temperature -= modifier; }
-                        else if (j == 2) { temperature += modifier; }
-                        if (temperature < 0) temperature = 0;
-                        texts[10]->setString(std::to_string(temperature));
-                        eventtype = 12;
-                    }
+                    if (j == 0) { temperature -= modifier; }
+                    else if (j == 2) { temperature += modifier; }
+                    if (temperature < 0) temperature = 0;
+                    texts[10]->setString(std::to_string(temperature));
                 }
                 else if (i == 13) {
                     // Adjusting the Wind values
-                    if (mouse_collide(mouse, pos, size)) {
-                        if (j == 0) { h_blow--; }
-                        if (j == 2) { h_blow++; }
-                        if (j == 3) { v_blow--; }
-                        if (j == 5) { v_blow++; }
-                    }
+                    if (j == 0) { h_blow--; }
+                    if (j == 2) { h_blow++; }
+                    if (j == 3) { v_blow--; }
+                    if (j == 5) { v_blow++; }
                 }
+                else if (i == 14) {
+                    // Drawing Particles
+                    draw_line = false;
+                    draw_curve = false;
+                    draw_particles = true;
+
+                    vectors[i][1]->setFillColor(active);
+                    vectors[i + 1][1]->setFillColor(inactive);
+                    vectors[i + 2][1]->setFillColor(inactive);
+                }
+                else if (i == 15) {
+                    // Drawing Lines
+                    draw_line = true;
+                    draw_curve = false;
+                    draw_particles = false;
+
+                    vectors[i - 1][1]->setFillColor(inactive);
+                    vectors[i][1]->setFillColor(active);
+                    vectors[i + 1][1]->setFillColor(inactive);
+                }
+                else if (i == 16) {
+                    // Drawing Curves
+                    draw_line = false;
+                    draw_curve = true;
+                    draw_particles = false;
+                    eventtype = 16;
+                    vectors[i - 2][1]->setFillColor(inactive);
+                    vectors[i - 1][1]->setFillColor(inactive);
+                    vectors[i][1]->setFillColor(active);
+                }
+                else if (i == 17) {
+                    // Enable Wind
+                    wind_enabled = wind_enabled ? false : true;
+                    if (wind_enabled) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 18) {
+                    // Enable Consumption | Particles with this property can "eat" other particles regardless of other properties.
+                    consume = consume ? false : true;
+                    if (consume) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 19) {
+                    // Enable Explosion | Particles explode into an undetermined amount of particles on contact if fast enough
+                    explode = explode ? false : true;
+                    if (explode) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 20) {
+                    // Enable Negative Mass
+                    mass = -mass;
+                    if (mass < 0) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 21) {
+                    // Enable Radioactivity | Explained in chernobyl_particle()
+                    radioactive = radioactive ? false : true;
+                    if (radioactive) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 22) {
+                    // Enable Teleportation | Spontaneously teleports at random
+                    teleportation = teleportation ? false : true;
+                    if (teleportation) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 23) {
+                    // Enable Swapping  | Particles with this tag can swap with other particles that contain the particle_swap tag
+                    particle_swap = particle_swap ? false : true;
+                    if (particle_swap) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 24) {
+                    // Enable Iridescence | Spontaneously changes colors at random
+                    iridescent = iridescent ? false : true;
+                    if (iridescent) vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 25) {
+                    // Enable Fire
+                    type = (type == "fire") ? "normal" : "fire";
+                    if (type == "fire") vectors[i][1]->setFillColor(active);
+                    else vectors[i][1]->setFillColor(inactive);
+                }
+                else if (i == 26) {
+                    // Clear Screen
+                }
+                eventtype = i;
+                break;
             }
         }
     }
@@ -247,9 +271,11 @@ bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, 
 }
 void UserInterface::PictureDisplay() {
 
-    particle_preview->setRadius(5);
-    particle_preview->setFillColor(sf::Color(255, 0, 0));
-    particle_preview->setPosition(convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
+    // Particles for Preview Buttons
+    sf::CircleShape* p1 = new sf::CircleShape();
+    p1->setRadius(5);
+    p1->setFillColor(sf::Color(255, 0, 0));
+    p1->setPosition(convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
 
     // PARTICLE AND ENVIRONMENT MANIPULATION
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Open/Close Button               [0]
@@ -265,12 +291,22 @@ void UserInterface::PictureDisplay() {
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Boxes to Change Gravity        [10]
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Box to toggle rainbow mode     [11]
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Box to toggle temperature      [12]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Box to toggle wind             [13]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Box to change wind values      [13]
 
     // WHAT THE USER WANTS TO DO
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Particles
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Curves
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Lines
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Particles                 [14]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Curves                    [15]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Lines                     [16]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Wind                    [17]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Consumption             [18]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Explosion               [19]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle -Mass                   [20]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Radioactivity           [21]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Teleportation           [22]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Swapping                [23]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Iridescence             [24]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Fire                    [25]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Clear Screen                   [26]
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
@@ -282,6 +318,8 @@ void UserInterface::PictureDisplay() {
     sf::Color pastel_green(106, 204, 92);
     sf::Color pastel_blue(94, 89, 194);
     sf::Color white(215, 215, 185);
+    sf::Color dark_blue(5, 13, 64);
+    sf::Color nice_green(75, 150, 75);
 
     // Bars surrounding the Open/Close Button
     sf::Vector2f hb = convert_resolution(sf::Vector2f(50, 7));
@@ -357,7 +395,7 @@ void UserInterface::PictureDisplay() {
     sf::RectangleShape* tempplus =    make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 490)));
     sf::RectangleShape* tempminus =   make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 490)));
 
-    // Wind
+    // Wind Values
     sf::RectangleShape* windx =      make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 132, 560)));
     sf::RectangleShape* windxplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 560)));
     sf::RectangleShape* windxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 560)));
@@ -365,6 +403,77 @@ void UserInterface::PictureDisplay() {
     sf::RectangleShape* windyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 560)));
     sf::RectangleShape* windyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 560)));
 
+    // Left Bar
+
+    // Colors
+    //      light_grey
+    //      dark_grey
+    //      purple
+    //      pastel_orange
+    //      pastel_yellow
+    //      pastel_red
+    //      pastel_green
+    //      pastel_blue
+    //      white
+
+    // General Box
+    sf::Vector2f left_background = convert_resolution(sf::Vector2f(50, 50));
+    sf::Vector2f left_foreground = convert_resolution(sf::Vector2f(44, 44));
+
+    // Draw Particles Box
+    sf::RectangleShape* dp_fg =     make_bar(left_foreground, nice_green, convert_resolution(sf::Vector2f(3, 73)));
+    sf::RectangleShape* dp_bg =     make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 70)));
+
+    // Curves
+    sf::RectangleShape* curve_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 123)));
+    sf::RectangleShape* curve_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 120)));
+
+    // Lines
+    sf::RectangleShape* lines_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 173)));
+    sf::RectangleShape* lines_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 170)));
+
+    // Wind
+    sf::RectangleShape* dw_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 223)));
+    sf::RectangleShape* dw_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 220)));
+
+    // Consumption
+    sf::RectangleShape* consume_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 273)));
+    sf::RectangleShape* consume_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 270)));
+
+    // Explosion
+    sf::RectangleShape* explode_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 323)));
+    sf::RectangleShape* explode_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 320)));
+
+    // -Mass
+    sf::RectangleShape* negmass_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 373)));
+    sf::RectangleShape* negmass_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 370)));
+
+    // Radioactivity
+    sf::RectangleShape* rad_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 423)));
+    sf::RectangleShape* rad_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 420)));
+
+    // Teleportating
+    sf::RectangleShape* tele_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 473)));
+    sf::RectangleShape* tele_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 470)));
+
+    // Swapping
+    sf::RectangleShape* swap_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 523)));
+    sf::RectangleShape* swap_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 520)));
+
+    // Iridescence
+    sf::RectangleShape* irid_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 573)));
+    sf::RectangleShape* irid_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 570)));
+
+    // Fire
+    sf::RectangleShape* fire_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 623)));
+    sf::RectangleShape* fire_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 620)));
+
+    // Clear
+    sf::RectangleShape* clear_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 673)));
+    sf::RectangleShape* clear_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 670)));
+
+
+    // Right Tab
     vectors[0].push_back(rect4);
     vectors[0].push_back(rect1);
     vectors[0].push_back(rect2);
@@ -413,6 +522,34 @@ void UserInterface::PictureDisplay() {
     vectors[13].push_back(windyminus);
     vectors[13].push_back(windy);
     vectors[13].push_back(windyplus);
+
+    // Left Bar
+    vectors[14].push_back(dp_bg);
+    vectors[14].push_back(dp_fg);
+    vectors[15].push_back(curve_bg);
+    vectors[15].push_back(curve_fg);
+    vectors[16].push_back(lines_bg);
+    vectors[16].push_back(lines_fg);
+    vectors[17].push_back(dw_bg);
+    vectors[17].push_back(dw_fg);
+    vectors[18].push_back(consume_bg);
+    vectors[18].push_back(consume_fg);
+    vectors[19].push_back(explode_bg);
+    vectors[19].push_back(explode_fg);
+    vectors[20].push_back(negmass_bg);
+    vectors[20].push_back(negmass_fg);
+    vectors[21].push_back(rad_bg);
+    vectors[21].push_back(rad_fg);
+    vectors[22].push_back(tele_bg);
+    vectors[22].push_back(tele_fg);
+    vectors[23].push_back(swap_bg);
+    vectors[23].push_back(swap_fg);
+    vectors[24].push_back(irid_bg);
+    vectors[24].push_back(irid_fg);
+    vectors[25].push_back(fire_bg);
+    vectors[25].push_back(fire_fg);
+    vectors[26].push_back(clear_bg);
+    vectors[26].push_back(clear_fg);
 }
 
 void UserInterface::TextDisplay(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature) {

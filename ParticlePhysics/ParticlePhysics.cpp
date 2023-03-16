@@ -627,7 +627,7 @@ int main()
 
     std::vector<Particle*>* particles = new std::vector<Particle*>;
     std::vector<sf::Text*> texts = ui.texts;
-    sf::CircleShape *particle_preview = ui.particle_preview;
+    std::vector<sf::CircleShape*> preview_particles = ui.preview_particles;
 
     bool r_dir = false;
     bool g_dir = true;
@@ -660,76 +660,17 @@ int main()
                     curves.clear();
                     biggest_radius = 0;
                 }
-                else if (event.key.code == sf::Keyboard::L) {
-                    draw_line = true;
-                    draw_curve = false;
-                    draw_particles = false;
-                }
-                else if (event.key.code == sf::Keyboard::C) {
-                    draw_line = false;
-                    draw_curve = true;
-                    draw_particles = false;
-                }
-                else if (event.key.code == sf::Keyboard::P) {
-                    draw_line = false;
-                    draw_curve = false;
-                    draw_particles = true;
-                }
-                else if (event.key.code == sf::Keyboard::W) {
-                    wind_enabled = wind_enabled ? false : true;
-                }
-                
-                // Custom Particles 0 - 9 on keyboard
-                else if (event.key.code == 26) {
-                    // Particles with this property can "eat" other particles regardless of other properties.
-                    consume = consume ? false : true;
-                }
-                else if (event.key.code == 27) {
-                    // Explodes into smaller particles
-                    // Particles explode into an undetermined amount of particles on contact if fast enough
-                    explode = explode ? false : true;
-                }
-                else if (event.key.code == 28) {
-                    // Pretty Self Explanatory
-                    mass = -mass;
-                }
-                else if (event.key.code == 29) {
-                    // Electricity?
-
-                }
-                else if (event.key.code == 30) {
-                    // Explained in chernobyl_particle()
-                    radioactive = radioactive ? false : true;
-                }
-                else if (event.key.code == 31) {
-                    // Magenetism
-
-                }
-                else if (event.key.code == 32) {
-                    // Spontaneous Teleportation within the quad tree bounds
-                    teleportation = teleportation ? false : true;
-                }
-                else if (event.key.code == 33) {
-                    // Particles with this tag can swap with other particles that contain the particle_swap tag
-                    particle_swap = particle_swap ? false : true;
-                }
-                else if (event.key.code == 34) {
-                    // Spontaneously changes colors at random
-                    iridescent = iridescent ? false : true;
-                }
-                else if (event.key.code == 35) {
-                    // Heat Transfer
-                    type = (type == "fire") ? "normal" : "fire";
-                }
             }
-            if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.type == sf::Event::MouseButtonPressed and event.type != sf::Event::MouseButtonReleased) {
                 sf::Vector2i mouse_pos = sf::Mouse::getPosition(*window);
                 sf::Vector2f mouse_conv = window->mapPixelToCoords(mouse_pos);
                 sf::Vector2i mouse = sf::Vector2i(mouse_conv.x, mouse_conv.y);
 
                 int eventtype = -1;
                 bool ui_collision = ui.check_collision(UI_render_type, eventtype, mouse, red, green, blue, start_vel_x, start_vel_y, \
-                    mass, radius, modifier, particle_amount, temperature, rainbow_mode, viscosity, horizontal_blow, vertical_blow, gravity);
+                    mass, radius, modifier, particle_amount, temperature, rainbow_mode, viscosity, horizontal_blow, vertical_blow, gravity, \
+                    draw_particles, draw_line, draw_curve, wind_enabled, consume, explode, radioactive, teleportation, particle_swap, iridescent,
+                    type);
 
                 if (!ui_collision) {
 
@@ -786,7 +727,7 @@ int main()
                             sf::Vector2f velocity(start_vel_x, start_vel_y);
 
                             // Updating the preview incase particles change colors willingly
-                            particle_preview->setFillColor(sf::Color(red, green, blue));
+                            preview_particles[0]->setFillColor(sf::Color(red, green, blue));
 
                             Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent, radioactive);
                             particles->push_back(particle);
@@ -948,7 +889,10 @@ int main()
             for (int object = 0; object < UI_vectors.size(); object++) {
                 for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
                     window->draw((*UI_vectors[object][rectangle]));
-                    if (object == 1 && rectangle == UI_vectors[object].size() - 1) window->draw(*particle_preview);
+                    //if (object == 1 && rectangle == UI_vectors[object].size() - 1) window->draw(*particle_preview);
+                }
+                for (auto& preview : preview_particles) {
+                    window->draw(*preview);
                 }
             }
 
