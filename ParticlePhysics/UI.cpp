@@ -77,7 +77,7 @@ bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, 
                     else if (j == 2) { red += modifier; }
                     if (red > 255) { red = 255; }
                     if (red < 0) { red = 0; }
-                    preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                    for (auto& preview : preview_particles) preview->setFillColor(sf::Color(red, green, blue));
                     texts[0]->setString(std::to_string(red));
                 }
                 else if (i == 3) {
@@ -86,7 +86,7 @@ bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, 
                     else if (j == 2) { green += modifier; }
                     if (green > 255) { green = 255; }
                     if (green < 0) { green = 0; }
-                    preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                    for (auto& preview : preview_particles) preview->setFillColor(sf::Color(red, green, blue));
                     texts[1]->setString(std::to_string(green));
                 }
                 else if (i == 4) {
@@ -95,7 +95,7 @@ bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, 
                     else if (j == 2) { blue += modifier; }
                     if (blue > 255) { blue = 255; }
                     if (blue < 0) { blue = 0; }
-                    preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                    for (auto& preview : preview_particles) preview->setFillColor(sf::Color(red, green, blue));
                     texts[2]->setString(std::to_string(blue));
                 }
                 else if (i == 5) {
@@ -272,10 +272,49 @@ bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, 
 void UserInterface::PictureDisplay() {
 
     // Particles for Preview Buttons
-    sf::CircleShape* p1 = new sf::CircleShape();
-    p1->setRadius(5);
-    p1->setFillColor(sf::Color(255, 0, 0));
-    p1->setPosition(convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
+    sf::CircleShape* color_preview = new sf::CircleShape();
+    sf::CircleShape* draw_particle_preview = new sf::CircleShape();
+    sf::CircleShape* consume_preview = new sf::CircleShape();
+    sf::CircleShape* explode_preview = new sf::CircleShape();
+    sf::CircleShape* negative_mass_preview = new sf::CircleShape();
+    sf::CircleShape* radioactive_preview = new sf::CircleShape();
+    sf::CircleShape* teleport_preview = new sf::CircleShape();
+    sf::CircleShape* swap_preview = new sf::CircleShape();
+    sf::CircleShape* iridescent_preview = new sf::CircleShape();
+    sf::CircleShape* fire_preview = new sf::CircleShape();
+
+    color_preview->setRadius(5);
+    draw_particle_preview->setRadius(5);
+    consume_preview->setRadius(5);
+    explode_preview->setRadius(5);
+    negative_mass_preview->setRadius(5);
+    radioactive_preview->setRadius(5);
+    teleport_preview->setRadius(5);
+    swap_preview->setRadius(5);
+    iridescent_preview->setRadius(5);
+    fire_preview->setRadius(5);
+
+    color_preview->setFillColor(sf::Color(255, 0, 0));
+    draw_particle_preview->setFillColor(sf::Color(255, 0, 0));
+    consume_preview->setFillColor(sf::Color(255, 0, 0));
+    explode_preview->setFillColor(sf::Color(255, 0, 0));
+    negative_mass_preview->setFillColor(sf::Color(255, 0, 0));
+    radioactive_preview->setFillColor(sf::Color(255, 0, 0));
+    teleport_preview->setFillColor(sf::Color(255, 0, 0));
+    swap_preview->setFillColor(sf::Color(255, 0, 0));
+    iridescent_preview->setFillColor(sf::Color(255, 0, 0));
+    fire_preview->setFillColor(sf::Color(255, 0, 0));
+
+    color_preview->setPosition(convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
+    draw_particle_preview->setPosition(convert_resolution(sf::Vector2f(18, 87)));
+    consume_preview->setPosition(convert_resolution(sf::Vector2f(18, 287)));
+    explode_preview->setPosition(convert_resolution(sf::Vector2f(18, 337)));
+    negative_mass_preview->setPosition(convert_resolution(sf::Vector2f(18, 387)));
+    radioactive_preview->setPosition(convert_resolution(sf::Vector2f(18, 437)));
+    teleport_preview->setPosition(convert_resolution(sf::Vector2f(18, 487)));
+    swap_preview->setPosition(convert_resolution(sf::Vector2f(18, 537)));
+    iridescent_preview->setPosition(convert_resolution(sf::Vector2f(18, 587)));
+    fire_preview->setPosition(convert_resolution(sf::Vector2f(18, 637)));
 
     // PARTICLE AND ENVIRONMENT MANIPULATION
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Open/Close Button               [0]
@@ -472,6 +511,17 @@ void UserInterface::PictureDisplay() {
     sf::RectangleShape* clear_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 673)));
     sf::RectangleShape* clear_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 670)));
 
+    // Preview Particles
+    preview_particles.push_back(color_preview);
+    preview_particles.push_back(draw_particle_preview);
+    preview_particles.push_back(consume_preview);
+    preview_particles.push_back(explode_preview);
+    preview_particles.push_back(negative_mass_preview);
+    preview_particles.push_back(radioactive_preview);
+    preview_particles.push_back(teleport_preview);
+    preview_particles.push_back(swap_preview);
+    preview_particles.push_back(iridescent_preview);
+    preview_particles.push_back(fire_preview);
 
     // Right Tab
     vectors[0].push_back(rect4);
