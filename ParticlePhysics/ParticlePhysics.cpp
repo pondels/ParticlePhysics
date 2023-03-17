@@ -269,7 +269,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
     float x2 = shape->getPosition().x;
     float y2 = shape->getPosition().y;
     float r2 = particle->radius;
-    double m2 = particle->mass;
+    double m2 = abs(particle->mass);
     sf::Vector2f* v2 = particle->velocity;
 
     // Particles to remove if consumed, destroyed, eaten, chomped, devoured, incinerated, blown up, thrown into the eternal abyss, or banished to the shadow realm
@@ -284,7 +284,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
             float x1 = (*particles)[p_i]->particle->getPosition().x;
             float y1 = (*particles)[p_i]->particle->getPosition().y;
             float r1 = (*particles)[p_i]->radius;
-            double m1 = (*particles)[p_i]->mass;
+            double m1 = abs((*particles)[p_i]->mass);
             sf::Vector2f* v1 = (*particles)[p_i]->velocity;
 
             if (horizontal_overlap(x1, x2, r1, r2)) {
