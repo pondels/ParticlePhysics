@@ -279,20 +279,34 @@ void UserInterface::PictureDisplay() {
     sf::CircleShape* negative_mass_preview = new sf::CircleShape();
     sf::CircleShape* radioactive_preview = new sf::CircleShape();
     sf::CircleShape* teleport_preview = new sf::CircleShape();
-    sf::CircleShape* swap_preview = new sf::CircleShape();
+    sf::CircleShape* swap1_preview = new sf::CircleShape();
+    sf::CircleShape* swap2_preview = new sf::CircleShape();
     sf::CircleShape* iridescent_preview = new sf::CircleShape();
     sf::CircleShape* fire_preview = new sf::CircleShape();
 
-    color_preview->setRadius(5);
-    draw_particle_preview->setRadius(5);
-    consume_preview->setRadius(5);
-    explode_preview->setRadius(5);
-    negative_mass_preview->setRadius(5);
-    radioactive_preview->setRadius(5);
-    teleport_preview->setRadius(5);
-    swap_preview->setRadius(5);
-    iridescent_preview->setRadius(5);
-    fire_preview->setRadius(5);
+    color_preview->setRadius(5);         //  [0]
+    draw_particle_preview->setRadius(5); //  [1]
+    consume_preview->setRadius(5);       //  [2]
+    explode_preview->setRadius(5);       //  [3]
+    negative_mass_preview->setRadius(5); //  [4]
+    radioactive_preview->setRadius(5);   //  [5]
+    teleport_preview->setRadius(5);      //  [6]
+    swap1_preview->setRadius(5);         //  [7]
+    swap2_preview->setRadius(2);         //  [8]
+    iridescent_preview->setRadius(5);    //  [9]
+    fire_preview->setRadius(5);          // [10]
+
+    color_preview->setOrigin(sf::Vector2f(5, 5));
+    draw_particle_preview->setOrigin(sf::Vector2f(5, 5));
+    consume_preview->setOrigin(sf::Vector2f(5, 5));
+    explode_preview->setOrigin(sf::Vector2f(5, 5));
+    negative_mass_preview->setOrigin(sf::Vector2f(5, 5));
+    radioactive_preview->setOrigin(sf::Vector2f(5, 5));
+    teleport_preview->setOrigin(sf::Vector2f(5, 5));
+    swap1_preview->setOrigin(sf::Vector2f(5, 5));
+    swap2_preview->setOrigin(sf::Vector2f(2, 2));
+    iridescent_preview->setOrigin(sf::Vector2f(5, 5));
+    fire_preview->setOrigin(sf::Vector2f(5, 5));
 
     color_preview->setFillColor(sf::Color(255, 0, 0));
     draw_particle_preview->setFillColor(sf::Color(255, 0, 0));
@@ -301,20 +315,22 @@ void UserInterface::PictureDisplay() {
     negative_mass_preview->setFillColor(sf::Color(255, 0, 0));
     radioactive_preview->setFillColor(sf::Color(255, 0, 0));
     teleport_preview->setFillColor(sf::Color(255, 0, 0));
-    swap_preview->setFillColor(sf::Color(255, 0, 0));
+    swap1_preview->setFillColor(sf::Color(255, 0, 0));
+    swap2_preview->setFillColor(sf::Color(255, 0, 0));
     iridescent_preview->setFillColor(sf::Color(255, 0, 0));
     fire_preview->setFillColor(sf::Color(255, 0, 0));
 
-    color_preview->setPosition(convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
-    draw_particle_preview->setPosition(convert_resolution(sf::Vector2f(18, 87)));
-    consume_preview->setPosition(convert_resolution(sf::Vector2f(18, 287)));
-    explode_preview->setPosition(convert_resolution(sf::Vector2f(18, 337)));
-    negative_mass_preview->setPosition(convert_resolution(sf::Vector2f(18, 387)));
-    radioactive_preview->setPosition(convert_resolution(sf::Vector2f(18, 437)));
-    teleport_preview->setPosition(convert_resolution(sf::Vector2f(18, 487)));
-    swap_preview->setPosition(convert_resolution(sf::Vector2f(18, 537)));
-    iridescent_preview->setPosition(convert_resolution(sf::Vector2f(18, 587)));
-    fire_preview->setPosition(convert_resolution(sf::Vector2f(18, 637)));
+    color_preview->setPosition(        convert_resolution(sf::Vector2f(1920 + 210 - 5, 70 - 5)));
+    draw_particle_preview->setPosition(convert_resolution(sf::Vector2f(24,  94)));
+    consume_preview->setPosition(      convert_resolution(sf::Vector2f(24, 294)));
+    explode_preview->setPosition(      convert_resolution(sf::Vector2f(24, 344)));
+    negative_mass_preview->setPosition(convert_resolution(sf::Vector2f(24, 394)));
+    radioactive_preview->setPosition(  convert_resolution(sf::Vector2f(24, 444)));
+    teleport_preview->setPosition(     convert_resolution(sf::Vector2f(24, 494)));
+    swap1_preview->setPosition(        convert_resolution(sf::Vector2f(16, 550)));
+    swap2_preview->setPosition(        convert_resolution(sf::Vector2f(35, 537)));
+    iridescent_preview->setPosition(   convert_resolution(sf::Vector2f(24, 594)));
+    fire_preview->setPosition(         convert_resolution(sf::Vector2f(24, 644)));
 
     // PARTICLE AND ENVIRONMENT MANIPULATION
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Open/Close Button               [0]
@@ -519,7 +535,8 @@ void UserInterface::PictureDisplay() {
     preview_particles.push_back(negative_mass_preview);
     preview_particles.push_back(radioactive_preview);
     preview_particles.push_back(teleport_preview);
-    preview_particles.push_back(swap_preview);
+    preview_particles.push_back(swap1_preview);
+    preview_particles.push_back(swap2_preview);
     preview_particles.push_back(iridescent_preview);
     preview_particles.push_back(fire_preview);
 

@@ -33,8 +33,8 @@ int biggest_radius = 0;
 const float grav_const = 6.6743 * pow(10, -6);
 const float pi = 3.14159265;
 float gravity = 9.81f;
-sf::Vector2f windowsize(1280, 720);
-sf::Vector2f quadtreesize(1280, 720);
+sf::Vector2f windowsize(1600, 900);
+sf::Vector2f quadtreesize(1600, 900);
 
 float random_number_generator(std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
 
@@ -567,7 +567,7 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
 }
 int main()
 {
-    int fps = 60;
+    int fps = 165;
     float substeps = 10.f;
     float deltaTime = 1.f / fps;
     float subdt = deltaTime / substeps;
@@ -632,6 +632,12 @@ int main()
     bool r_dir = false;
     bool g_dir = true;
     bool b_dir = false;
+
+    // Preview Values
+    bool grow = true;
+    bool grow_rad = true;
+    int preview_temp = 0;
+    bool heating = true;
 
     while (window->isOpen())
     {
@@ -727,7 +733,7 @@ int main()
                             sf::Vector2f velocity(start_vel_x, start_vel_y);
 
                             // Updating the preview incase particles change colors willingly
-                            preview_particles[0]->setFillColor(sf::Color(red, green, blue));
+                            for (auto& preview : preview_particles) preview->setFillColor(sf::Color(red, green, blue));
 
                             Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent, radioactive);
                             particles->push_back(particle);
@@ -880,6 +886,116 @@ int main()
                         (*particles)[step]->particle->setFillColor(part_color);
                     }
                 }
+            }
+
+            // Effects Preview Particles
+            for (int i = 2; i < 11; i++) {
+                
+                float random_number = random_number_generator();
+                float the_chosen_one = random_number_generator(std::tuple<int, int>(1, 3));
+                // Update consume particle
+                if (i == 2 || (the_chosen_one == 1 && i == 5)) {
+                    if (random_number * percent_divisor <= teleport_chance) {
+                        float radius = preview_particles[i]->getRadius();
+                        if (grow && i != 5) {
+                            radius++;
+                            if (radius >= 9) grow = false;
+                        }
+                        else if (!grow && i != 5) {
+                            radius--;
+                            if (radius <= 3) grow = true;
+                        }
+                        else if (grow_rad && i != 2) {
+                            radius++;
+                            if (radius >= 9) grow_rad = false;
+                        }
+                        else {
+                            radius--;
+                            if (radius <= 3) grow_rad = true;
+                        }
+                        preview_particles[i]->setRadius(radius);
+                        preview_particles[i]->setOrigin(sf::Vector2f(radius, radius));
+                    }
+                }
+                // Update explode particle
+                else if (i == 3) {
+
+                }
+                // Update negative particle
+                else if (i == 4) {
+
+                }
+                // Update teleport particle
+                else if (i == 6 || (the_chosen_one == 2 && i == 5)) {
+                    if (random_number * percent_divisor <= teleport_chance) {
+                        sf::Vector2f prev_x_vals;
+                        sf::Vector2f prev_y_vals;
+                        if (i == 5) {
+                            prev_x_vals = ui.convert_resolution(sf::Vector2f(10, 42));
+                            prev_y_vals = ui.convert_resolution(sf::Vector2f(430, 460));
+                        }
+                        if (i == 6) {
+                            prev_x_vals = ui.convert_resolution(sf::Vector2f(10, 42));
+                            prev_y_vals = ui.convert_resolution(sf::Vector2f(480, 510));
+                        }
+                        float random_x = random_number_generator(std::tuple<int, int>(prev_x_vals.x, prev_x_vals.y));
+                        float random_y = random_number_generator(std::tuple<int, int>(prev_y_vals.x, prev_y_vals.y));
+                        preview_particles[i]->setPosition(random_x, random_y);
+                    }
+                }
+                // Update swap particles | indecies 7 & 8
+                else if (i == 7) {
+                    if (random_number * percent_divisor <= swap_chance) {
+                        float random_particle = random_number_generator(std::tuple<int, int>(0, int(particles->size() - 1)));
+                        sf::Vector2f pos1 = preview_particles[i]->getPosition();
+                        sf::Vector2f pos2 = preview_particles[i+1]->getPosition();
+                        preview_particles[i]->setPosition(pos2);
+                        preview_particles[i+1]->setPosition(pos1);
+                    }
+                }
+                // Update iridescent particle
+                else if (i == 9 || (the_chosen_one == 3 && i == 5)) {
+                    if (random_number * percent_divisor <= iridescent_chance) {
+                        // Chooses to shift red, green, or blue
+                        float color_choice = random_number_generator(std::tuple<int, int>(1, 3));
+                        float color_shift = random_number_generator(std::tuple<int, int>(-35, 35));
+                        sf::Color part_color = preview_particles[i]->getFillColor();
+                        if (color_choice == 1) {
+                            if (part_color.r + color_shift < 0) color_shift = abs(color_shift);
+                            else if (part_color.r + color_shift > 255) color_shift = -color_shift;
+                            part_color.r += color_shift;
+                        }
+                        else if (color_choice == 2) {
+                            if (part_color.g + color_shift < 0) color_shift = abs(color_shift);
+                            else if (part_color.g + color_shift > 255) color_shift = -color_shift;
+                            part_color.g += color_shift;
+                        }
+                        else if (color_choice == 3) {
+                            if (part_color.b + color_shift < 0) color_shift = abs(color_shift);
+                            else if (part_color.b + color_shift > 255) color_shift = -color_shift;
+                            part_color.b += color_shift;
+                        }
+                        preview_particles[i]->setFillColor(part_color);
+                    }
+                }
+                // Update fire particle
+                else if (i == 10) {
+                    if (random_number * percent_divisor <= teleport_chance) {
+                        if (heating) {
+                            sf::Color temp_color = fire_color_updater(preview_temp);
+                            preview_particles[i]->setFillColor(temp_color);
+                            if (preview_temp >= 250) heating = false;
+                            preview_temp++;
+                        }
+                        else {
+                            sf::Color temp_color = fire_color_updater(preview_temp);
+                            preview_particles[i]->setFillColor(temp_color);
+                            if (preview_temp <= 0) heating = true;
+                            preview_temp--;
+                        }
+                    }
+                }
+
             }
 
             // Wind Physics
