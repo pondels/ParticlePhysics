@@ -395,7 +395,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                         limit++;
                                     }
 
-                                    int particle_amt = private_speed / 200;
+                                    int particle_amt = private_speed / 500;
 
                                     // Chooses the smallest amount so we don't over-divide
                                     particle_amt = (particle_amt > limit) ? limit: particle_amt;
@@ -429,7 +429,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                                         limit++;
                                     }
 
-                                    int particle_amt = private_speed / 200;
+                                    int particle_amt = private_speed / 500;
 
                                     // Chooses the smallest amount so we don't over-divide
                                     particle_amt = (particle_amt > limit) ? limit : particle_amt;
@@ -588,7 +588,7 @@ int main()
     int green = 0;
     int blue = 0;
     int temperature = 15;
-    bool rainbow_mode = true;
+    bool rainbow_mode = false;
     float viscosity = 70;
     bool consume = false;
     bool explode = false;
@@ -639,6 +639,28 @@ int main()
     int preview_temp = 0;
     bool heating = true;
 
+    sf::VertexArray* plv = new sf::VertexArray(sf::LineStrip, 50);
+    Line preview_line(plv, 50);
+    preview_line.add_point(sf::Vector2i(convert_resolution(sf::Vector2f(7, 130))));
+    preview_line.add_point(sf::Vector2i(convert_resolution(sf::Vector2f(45, 163))));
+    sf::VertexArray* pcv = new sf::VertexArray(sf::LineStrip, 50);
+    Bezier_Curve preview_curve(pcv, 50);
+    preview_curve.add_point(sf::Vector2i(convert_resolution(sf::Vector2f(7, 183))));
+    preview_curve.add_point(sf::Vector2i(convert_resolution(sf::Vector2f(7, 213))));
+    preview_curve.add_point(sf::Vector2i(convert_resolution(sf::Vector2f(45, 213))));
+
+    // Wind
+    sf::Texture wind_texture;
+    sf::Texture clear_texture;
+    if (!wind_texture.loadFromFile("C:\\Users\\yeckr\\OneDrive\\Desktop\\Art Folder\\LIKETHEWIND.png")) {}
+    if (!clear_texture.loadFromFile("C:\\Users\\yeckr\\OneDrive\\Desktop\\Art Folder\\LIKETHECLEAR.png")) {}
+    sf::Sprite wind_sprite(wind_texture);
+    sf::Sprite clear_sprite(clear_texture);
+    wind_sprite.setPosition(convert_resolution(sf::Vector2f(0, 233)));
+    wind_sprite.setScale(.25, .25);
+    clear_sprite.setPosition(convert_resolution(sf::Vector2f(7, 678)));
+    clear_sprite.setScale(.25, .25);
+
     while (window->isOpen())
     {
 
@@ -656,8 +678,20 @@ int main()
                 else if (event.key.code == sf::Keyboard::Right) view.move(50.0f, 0.0f);
                 else if (event.key.code == sf::Keyboard::Up) view.move(0.0f, -10.0f);
                 else if (event.key.code == sf::Keyboard::Down) view.move(0.0f, 10.0f);
-                
-                else if (event.key.code == sf::Keyboard::Delete) {
+            }
+            if (event.type == sf::Event::MouseButtonPressed and event.type != sf::Event::MouseButtonReleased) {
+                sf::Vector2i mouse_pos = sf::Mouse::getPosition(*window);
+                sf::Vector2f mouse_conv = window->mapPixelToCoords(mouse_pos);
+                sf::Vector2i mouse = sf::Vector2i(mouse_conv.x, mouse_conv.y);
+
+                int eventtype = -1;
+                ui.check_collision(UI_render_type, eventtype, mouse, red, green, blue, start_vel_x, start_vel_y, \
+                    mass, radius, modifier, particle_amount, temperature, rainbow_mode, viscosity, horizontal_blow, vertical_blow, gravity, \
+                    draw_particles, draw_line, draw_curve, wind_enabled, consume, explode, radioactive, teleportation, particle_swap, iridescent,
+                    type);
+
+                // Clears everything from the window
+                if (eventtype == 26) {
                     for (int i = 0; i < particles->size(); i++) {
                         delete (*particles)[i];
                     }
@@ -666,19 +700,7 @@ int main()
                     curves.clear();
                     biggest_radius = 0;
                 }
-            }
-            if (event.type == sf::Event::MouseButtonPressed and event.type != sf::Event::MouseButtonReleased) {
-                sf::Vector2i mouse_pos = sf::Mouse::getPosition(*window);
-                sf::Vector2f mouse_conv = window->mapPixelToCoords(mouse_pos);
-                sf::Vector2i mouse = sf::Vector2i(mouse_conv.x, mouse_conv.y);
-
-                int eventtype = -1;
-                bool ui_collision = ui.check_collision(UI_render_type, eventtype, mouse, red, green, blue, start_vel_x, start_vel_y, \
-                    mass, radius, modifier, particle_amount, temperature, rainbow_mode, viscosity, horizontal_blow, vertical_blow, gravity, \
-                    draw_particles, draw_line, draw_curve, wind_enabled, consume, explode, radioactive, teleportation, particle_swap, iridescent,
-                    type);
-
-                if (!ui_collision) {
+                else if (eventtype == -1) {
 
                     if (draw_line) {
                         
@@ -995,7 +1017,6 @@ int main()
                         }
                     }
                 }
-
             }
 
             // Wind Physics
@@ -1005,11 +1026,16 @@ int main()
             for (int object = 0; object < UI_vectors.size(); object++) {
                 for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
                     window->draw((*UI_vectors[object][rectangle]));
-                    //if (object == 1 && rectangle == UI_vectors[object].size() - 1) window->draw(*particle_preview);
                 }
+
+                // Draws Preview Items
                 for (auto& preview : preview_particles) {
                     window->draw(*preview);
                 }
+                window->draw(*preview_line.shape);
+                window->draw(*preview_curve.shape);
+                window->draw(wind_sprite);
+                window->draw(clear_sprite);
             }
 
             // Draws the text on top of UI
@@ -1027,4 +1053,10 @@ int main()
 
 /*
 TODO LIST
+
+Negative Mass and Positive Mass don't work in Zero Gravity
+Lines don't have proper collisions
+Friction is weird with wind
+Clear Items using the UI
+Make UI follow the player
 */

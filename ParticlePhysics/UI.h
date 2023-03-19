@@ -18,7 +18,7 @@ public:
 	float convert_y(float);
 	sf::Vector2f convert_resolution(sf::Vector2f);
 	sf::RectangleShape* make_bar(sf::Vector2f, sf::Color, sf::Vector2f);
-	bool check_collision(std::string&, int, sf::Vector2i, int&, int&, int&, int&, int&,
+	void check_collision(std::string&, int&, sf::Vector2i, int&, int&, int&, int&, int&,
 		int&, int&, int&, int&, int&, bool&, float&, float&, float&, float&, bool&, bool&, bool&,
 		bool&, bool&, bool&, bool&, bool&, bool&, bool&,
 		std::string&);

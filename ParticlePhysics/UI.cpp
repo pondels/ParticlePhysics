@@ -32,7 +32,7 @@ void custom_message(sf::Text* message, sf::Vector2f position) {
     message->setFillColor(sf::Color::Black);
     message->setPosition(position);
 }
-bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, sf::Vector2i mouse, int& red, int& green, int& blue, int& vel_x, int& vel_y,
+void UserInterface::check_collision(std::string& UI_render_type, int& eventtype, sf::Vector2i mouse, int& red, int& green, int& blue, int& vel_x, int& vel_y,
     int& mass, int& radius, int& modifier, int& particle_amount, int& temperature, bool& rainbow_mode, float& viscosity, float& h_blow, float& v_blow, float& gravity,
     bool& draw_particles, bool& draw_line, bool& draw_curve, bool& wind_enabled, bool& consume, bool& explode, bool& radioactive, bool& teleportation, bool& particle_swap,
     bool& iridescent, std::string& type) {
@@ -266,8 +266,7 @@ bool UserInterface::check_collision(std::string& UI_render_type, int eventtype, 
     }
 
     // Eventtype changed, it's colliding with the UI
-    if (eventtype != -1) return true;
-    return false;
+    return;
 }
 void UserInterface::PictureDisplay() {
 
