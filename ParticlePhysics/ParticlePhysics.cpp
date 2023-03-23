@@ -565,7 +565,7 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
     float y = convert_y(coordinates.y);
     return sf::Vector2f(x, y);
 }
-void draw_particles(std::vector<std::unique_ptr<Particle>>* particles, sf::RenderWindow* window, int start_index, int end_index) {
+void drawParticles(std::vector<Particle*>* particles, sf::RenderWindow* window, int start_index, int end_index) {
     for (int i = start_index; i < end_index; i++) {
         window->draw(*(*particles)[i]->particle);
     }
@@ -588,9 +588,9 @@ int main()
     int start_vel_x = 0;
     int start_vel_y = 0;
     int mass = 150;
-    int radius = 15;
+    int radius = 5;
     int modifier = 1;
-    int particle_amount = 1;
+    int particle_amount = 1844;
     int red = 255;
     int green = 0;
     int blue = 0;
@@ -874,7 +874,24 @@ int main()
                 if (gravity == 0) space_qt->insert(point);
             }
 
-            update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
+            // DRAW EVERYTHING
+            if (particles->size() % num_threads == 0) {
+                int num_particles = particles->size();
+                int particles_per_thread = num_particles / num_threads;
+                std::vector<std::thread> threads;
+
+                for (int i = 0; i < num_threads; i++) {
+                    int start_index = i * particles_per_thread;
+                    int end_index = (i == num_threads - 1) ? num_particles : start_index + particles_per_thread;
+                    threads.emplace_back(std::thread(update_particles, particles, subdt, gravity, collisions_qt, space_qt, lines, curves));
+                }
+
+                // Wait for all threads to finish
+                for (auto& thread : threads) {
+                    thread.join();
+                }
+            }
+            //update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
 
             // Chances of particles using their abilities
             for (int step = 0; step < particles->size(); step++) {
@@ -1056,23 +1073,6 @@ int main()
             delete space_qt;
         }
 
-        // DRAW EVERYTHING
-        //if (particles->size() > 3) {
-        //    int num_particles = particles->size();
-        //    int particles_per_thread = num_particles / num_threads;
-        //    std::vector<std::thread> threads;
-
-        //    for (int i = 0; i < num_threads; i++) {
-        //        int start_index = i * particles_per_thread;
-        //        int end_index = (i == num_threads - 1) ? num_particles : start_index + particles_per_thread;
-        //        threads.emplace_back(std::thread(draw_particles, std::cref(particles), std::cref(window), start_index, end_index));
-        //    }
-
-        //    // Wait for all threads to finish
-        //    for (auto& thread : threads) {
-        //        thread.join();
-        //    }
-        //}
         // Draws Particles
         for (auto& particle : (*particles)) window->draw(*particle->particle);
 
