@@ -32,9 +32,26 @@ void custom_message(sf::Text* message, sf::Vector2f position) {
     message->setFillColor(sf::Color::Black);
     message->setPosition(position);
 }
+void UserInterface::move_UI(sf::Vector2i move) {
+    // Moves the UI based on a Vector2i
+    for (int object = 0; object < vectors.size(); object++) {
+        for (int rectangle = 0; rectangle < vectors[object].size(); rectangle++) {
+            sf::Vector2f pos = vectors[object][rectangle]->getPosition();
+            vectors[object][rectangle]->setPosition(pos.x + move.x, pos.y + move.y);
+        }
+    }
+    for (auto& prev_part : preview_particles) {
+        sf::Vector2f pos = prev_part->getPosition();
+        prev_part->setPosition(pos.x + move.x, pos.y + move.y);
+    }
+    for (int object = 0; object < texts.size(); object++) {
+        sf::Vector2f pos = texts[object]->getPosition();
+        texts[object]->setPosition(pos.x + move.x, pos.y + move.y);
+    }
+}
 void UserInterface::check_collision(std::string& UI_render_type, int& eventtype, sf::Vector2i mouse, int& red, int& green, int& blue, int& vel_x, int& vel_y,
     int& mass, int& radius, int& modifier, int& particle_amount, int& temperature, bool& rainbow_mode, float& viscosity, float& h_blow, float& v_blow, float& gravity,
-    bool& draw_particles, bool& draw_line, bool& draw_curve, bool& wind_enabled, bool& consume, bool& explode, bool& radioactive, bool& teleportation, bool& particle_swap,
+    bool& draw_particles, bool& move_window, bool& draw_line, bool& draw_curve, bool& wind_enabled, bool& consume, bool& explode, bool& radioactive, bool& teleportation, bool& particle_swap,
     bool& iridescent, std::string& type) {
 
     sf::Color inactive(75, 75, 75);
@@ -173,90 +190,108 @@ void UserInterface::check_collision(std::string& UI_render_type, int& eventtype,
                     if (j == 5) { v_blow++; }
                 }
                 else if (i == 14) {
+                    // Moving Window
+                    draw_line = false;
+                    draw_curve = false;
+                    draw_particles = false;
+                    move_window = true;
+                    vectors[i][1]->setFillColor(active);
+                    vectors[i + 1][1]->setFillColor(inactive);
+                    vectors[i + 2][1]->setFillColor(inactive);
+                    vectors[i + 3][1]->setFillColor(inactive);
+                }
+                else if (i == 15) {
                     // Drawing Particles
                     draw_line = false;
                     draw_curve = false;
                     draw_particles = true;
+                    move_window = false;
 
+                    vectors[i - 1][1]->setFillColor(inactive);
                     vectors[i][1]->setFillColor(active);
                     vectors[i + 1][1]->setFillColor(inactive);
                     vectors[i + 2][1]->setFillColor(inactive);
                 }
-                else if (i == 15) {
+                else if (i == 16) {
                     // Drawing Lines
                     draw_line = true;
                     draw_curve = false;
                     draw_particles = false;
+                    move_window = false;
 
+                    vectors[i - 2][1]->setFillColor(inactive);
                     vectors[i - 1][1]->setFillColor(inactive);
                     vectors[i][1]->setFillColor(active);
                     vectors[i + 1][1]->setFillColor(inactive);
                 }
-                else if (i == 16) {
+                else if (i == 17) {
                     // Drawing Curves
                     draw_line = false;
                     draw_curve = true;
                     draw_particles = false;
+                    move_window = false;
                     eventtype = 16;
+
+                    vectors[i - 3][1]->setFillColor(inactive);
                     vectors[i - 2][1]->setFillColor(inactive);
                     vectors[i - 1][1]->setFillColor(inactive);
                     vectors[i][1]->setFillColor(active);
                 }
-                else if (i == 17) {
+                else if (i == 18) {
                     // Enable Wind
                     wind_enabled = wind_enabled ? false : true;
                     if (wind_enabled) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 18) {
+                else if (i == 19) {
                     // Enable Consumption | Particles with this property can "eat" other particles regardless of other properties.
                     consume = consume ? false : true;
                     if (consume) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 19) {
+                else if (i == 20) {
                     // Enable Explosion | Particles explode into an undetermined amount of particles on contact if fast enough
                     explode = explode ? false : true;
                     if (explode) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 20) {
+                else if (i == 21) {
                     // Enable Negative Mass
                     mass = -mass;
                     if (mass < 0) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 21) {
+                else if (i == 22) {
                     // Enable Radioactivity | Explained in chernobyl_particle()
                     radioactive = radioactive ? false : true;
                     if (radioactive) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 22) {
+                else if (i == 23) {
                     // Enable Teleportation | Spontaneously teleports at random
                     teleportation = teleportation ? false : true;
                     if (teleportation) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 23) {
+                else if (i == 24) {
                     // Enable Swapping  | Particles with this tag can swap with other particles that contain the particle_swap tag
                     particle_swap = particle_swap ? false : true;
                     if (particle_swap) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 24) {
+                else if (i == 25) {
                     // Enable Iridescence | Spontaneously changes colors at random
                     iridescent = iridescent ? false : true;
                     if (iridescent) vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 25) {
+                else if (i == 26) {
                     // Enable Fire
                     type = (type == "fire") ? "normal" : "fire";
                     if (type == "fire") vectors[i][1]->setFillColor(active);
                     else vectors[i][1]->setFillColor(inactive);
                 }
-                else if (i == 26) {
+                else if (i == 27) {
                     // Clear Screen
                 }
                 eventtype = i;
@@ -348,19 +383,20 @@ void UserInterface::PictureDisplay() {
     vectors.push_back(std::vector<sf::RectangleShape*>()); // Box to change wind values      [13]
 
     // WHAT THE USER WANTS TO DO
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Particles                 [14]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Curves                    [15]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Lines                     [16]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Wind                    [17]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Consumption             [18]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Explosion               [19]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle -Mass                   [20]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Radioactivity           [21]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Teleportation           [22]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Swapping                [23]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Iridescence             [24]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Fire                    [25]
-    vectors.push_back(std::vector<sf::RectangleShape*>()); // Clear Screen                   [26]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Move Window                    [14] 
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Particles                 [15]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Curves                    [16]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Draw Lines                     [17]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Wind                    [18]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Consumption             [19]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Explosion               [20]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle -Mass                   [21]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Radioactivity           [22]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Teleportation           [23]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Swapping                [24]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Iridescence             [25]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Toggle Fire                    [26]
+    vectors.push_back(std::vector<sf::RectangleShape*>()); // Clear Screen                   [27]
 
     // Declaring all the necessary colors
     sf::Color light_grey(75, 75, 75);
@@ -473,6 +509,10 @@ void UserInterface::PictureDisplay() {
     // General Box
     sf::Vector2f left_background = convert_resolution(sf::Vector2f(50, 50));
     sf::Vector2f left_foreground = convert_resolution(sf::Vector2f(44, 44));
+
+    // Move Window Box
+    sf::RectangleShape* mw_fg = make_bar(left_foreground, light_grey, convert_resolution(sf::Vector2f(3, 23)));
+    sf::RectangleShape* mw_bg = make_bar(left_background, dark_grey, convert_resolution(sf::Vector2f(0, 20)));
 
     // Draw Particles Box
     sf::RectangleShape* dp_fg =     make_bar(left_foreground, nice_green, convert_resolution(sf::Vector2f(3, 73)));
@@ -590,32 +630,34 @@ void UserInterface::PictureDisplay() {
     vectors[13].push_back(windyplus);
 
     // Left Bar
-    vectors[14].push_back(dp_bg);
-    vectors[14].push_back(dp_fg);
-    vectors[15].push_back(curve_bg);
-    vectors[15].push_back(curve_fg);
-    vectors[16].push_back(lines_bg);
-    vectors[16].push_back(lines_fg);
-    vectors[17].push_back(dw_bg);
-    vectors[17].push_back(dw_fg);
-    vectors[18].push_back(consume_bg);
-    vectors[18].push_back(consume_fg);
-    vectors[19].push_back(explode_bg);
-    vectors[19].push_back(explode_fg);
-    vectors[20].push_back(negmass_bg);
-    vectors[20].push_back(negmass_fg);
-    vectors[21].push_back(rad_bg);
-    vectors[21].push_back(rad_fg);
-    vectors[22].push_back(tele_bg);
-    vectors[22].push_back(tele_fg);
-    vectors[23].push_back(swap_bg);
-    vectors[23].push_back(swap_fg);
-    vectors[24].push_back(irid_bg);
-    vectors[24].push_back(irid_fg);
-    vectors[25].push_back(fire_bg);
-    vectors[25].push_back(fire_fg);
-    vectors[26].push_back(clear_bg);
-    vectors[26].push_back(clear_fg);
+    vectors[14].push_back(mw_bg);
+    vectors[14].push_back(mw_fg);
+    vectors[15].push_back(dp_bg);
+    vectors[15].push_back(dp_fg);
+    vectors[16].push_back(curve_bg);
+    vectors[16].push_back(curve_fg);
+    vectors[17].push_back(lines_bg);
+    vectors[17].push_back(lines_fg);
+    vectors[18].push_back(dw_bg);
+    vectors[18].push_back(dw_fg);
+    vectors[19].push_back(consume_bg);
+    vectors[19].push_back(consume_fg);
+    vectors[20].push_back(explode_bg);
+    vectors[20].push_back(explode_fg);
+    vectors[21].push_back(negmass_bg);
+    vectors[21].push_back(negmass_fg);
+    vectors[22].push_back(rad_bg);
+    vectors[22].push_back(rad_fg);
+    vectors[23].push_back(tele_bg);
+    vectors[23].push_back(tele_fg);
+    vectors[24].push_back(swap_bg);
+    vectors[24].push_back(swap_fg);
+    vectors[25].push_back(irid_bg);
+    vectors[25].push_back(irid_fg);
+    vectors[26].push_back(fire_bg);
+    vectors[26].push_back(fire_fg);
+    vectors[27].push_back(clear_bg);
+    vectors[27].push_back(clear_fg);
 }
 
 void UserInterface::TextDisplay(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature) {

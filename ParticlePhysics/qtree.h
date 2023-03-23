@@ -136,7 +136,7 @@ class Barnes_Hut : public QuadTree {
 protected:
 	const float GRAV_CONST = 25.f;
 	const float SOFTENER = .1f;
-	const float THETA = 0.5f;
+	const float THETA = 0.7f;
 
 	// Children containing more particles
 	Barnes_Hut* northWestBarnes;

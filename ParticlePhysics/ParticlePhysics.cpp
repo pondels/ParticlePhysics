@@ -33,8 +33,8 @@ int biggest_radius = 0;
 const float grav_const = 6.6743 * pow(10, -6);
 const float pi = 3.14159265;
 float gravity = 9.81f;
-sf::Vector2f windowsize(1600, 900);
-sf::Vector2f quadtreesize(1600, 900);
+sf::Vector2f windowsize(1280, 720);
+sf::Vector2f quadtreesize(1280, 720);
 
 float random_number_generator(std::tuple<int, int> range = std::tuple<int, int>(1, 100)) {
 
@@ -565,9 +565,16 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
     float y = convert_y(coordinates.y);
     return sf::Vector2f(x, y);
 }
+void draw_particles(std::vector<std::unique_ptr<Particle>>* particles, sf::RenderWindow* window, int start_index, int end_index) {
+    for (int i = start_index; i < end_index; i++) {
+        window->draw(*(*particles)[i]->particle);
+    }
+}
 int main()
 {
     int fps = 165;
+    float zoom_val = 1;
+    int num_threads = 4;
     float substeps = 10.f;
     float deltaTime = 1.f / fps;
     float subdt = deltaTime / substeps;
@@ -615,6 +622,7 @@ int main()
     bool draw_line = false;
     bool draw_curve = false;
     bool draw_particles = true;
+    bool move_window = false;
 
     // Sets the vectors up for drawing custom shapes
     std::vector<Line> lines;
@@ -639,6 +647,10 @@ int main()
     int preview_temp = 0;
     bool heating = true;
 
+    sf::Vector2f prev_teleport_min(10, 42);
+    sf::Vector2f prev_tele_fifth_max(430, 460);
+    sf::Vector2f prev_tele_sixth_max(480, 510);
+
     sf::VertexArray* plv = new sf::VertexArray(sf::LineStrip, 50);
     Line preview_line(plv, 50);
     preview_line.add_point(sf::Vector2i(convert_resolution(sf::Vector2f(7, 130))));
@@ -661,6 +673,9 @@ int main()
     clear_sprite.setPosition(convert_resolution(sf::Vector2f(7, 678)));
     clear_sprite.setScale(.25, .25);
 
+    std::thread thread1;
+
+    sf::Vector2i curr_mouse_pos = sf::Mouse::getPosition(*window);
     while (window->isOpen())
     {
 
@@ -672,12 +687,35 @@ int main()
                 if (event.key.code == sf::Keyboard::Escape) {
                     window->close();
                 }
+            }
+            if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved && move_window) {
+                // Update Mouse Position
+                curr_mouse_pos = sf::Mouse::getPosition(*window);
+            }
+            // Dragging window around
+            if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved && move_window) {
+                sf::Vector2i mouse_pos = sf::Mouse::getPosition(*window);
+                sf::Vector2i change = (curr_mouse_pos - mouse_pos);
+                change.x *= zoom_val;
+                change.y *= zoom_val;
+                view.move(change.x, change.y);
+                
+                // Move the UI with the user
+                ui.move_UI(change);
 
-                // Pan Around Screen
-                else if (event.key.code == sf::Keyboard::Left) view.move(-50.0f, 0.0f);
-                else if (event.key.code == sf::Keyboard::Right) view.move(50.0f, 0.0f);
-                else if (event.key.code == sf::Keyboard::Up) view.move(0.0f, -10.0f);
-                else if (event.key.code == sf::Keyboard::Down) view.move(0.0f, 10.0f);
+                // Move other UI Elements
+                for (int seg = 0; seg < preview_line.segments; seg++) {
+                    (*preview_line.shape)[seg].position = (*preview_line.shape)[seg].position + sf::Vector2f(change);
+                }
+                for (int seg = 0; seg < preview_curve.segments; seg++) {
+                    (*preview_curve.shape)[seg].position = (*preview_curve.shape)[seg].position + sf::Vector2f(change);
+                }
+                wind_sprite.setPosition(wind_sprite.getPosition() + sf::Vector2f(change));
+                clear_sprite.setPosition(clear_sprite.getPosition() + sf::Vector2f(change));
+                prev_teleport_min = prev_teleport_min + sf::Vector2f(change);
+                prev_tele_fifth_max = prev_tele_fifth_max + sf::Vector2f(change);
+                prev_tele_sixth_max = prev_tele_sixth_max + sf::Vector2f(change);
+                curr_mouse_pos = mouse_pos;
             }
             if (event.type == sf::Event::MouseButtonPressed and event.type != sf::Event::MouseButtonReleased) {
                 sf::Vector2i mouse_pos = sf::Mouse::getPosition(*window);
@@ -687,11 +725,11 @@ int main()
                 int eventtype = -1;
                 ui.check_collision(UI_render_type, eventtype, mouse, red, green, blue, start_vel_x, start_vel_y, \
                     mass, radius, modifier, particle_amount, temperature, rainbow_mode, viscosity, horizontal_blow, vertical_blow, gravity, \
-                    draw_particles, draw_line, draw_curve, wind_enabled, consume, explode, radioactive, teleportation, particle_swap, iridescent,
+                    draw_particles, move_window, draw_line, draw_curve, wind_enabled, consume, explode, radioactive, teleportation, particle_swap, iridescent,
                     type);
 
                 // Clears everything from the window
-                if (eventtype == 26) {
+                if (eventtype == 27) {
                     for (int i = 0; i < particles->size(); i++) {
                         delete (*particles)[i];
                     }
@@ -768,14 +806,21 @@ int main()
             }
             // Zooming in and out
             if (event.type == sf::Event::MouseWheelScrolled) {
-                if (event.mouseWheelScroll.delta > 0) view.zoom(0.8f);
-                else if (event.mouseWheelScroll.delta < 0) view.zoom(1.25f);
+                if (event.mouseWheelScroll.delta > 0) {
+                    view.zoom(0.8f);
+                    zoom_val *= 0.8;
+                }
+                else if (event.mouseWheelScroll.delta < 0) {
+                    view.zoom(1.25f);
+                    zoom_val *= 1.25;
+                }
             }
         }
 
         window->setView(view);
         window->clear();
 
+        // UPDATE VALUES
         for (int min_substeps = substeps; min_substeps > 0; min_substeps--) {
 
             // Boundary to the quadtrees
@@ -827,21 +872,6 @@ int main()
                 Point point(pos, i, (*particles)[i]->mass);
                 collisions_qt->insert(point);
                 if (gravity == 0) space_qt->insert(point);
-            }
-
-            // Draws Particles
-            for (auto& particle : (*particles)) window->draw(*particle->particle);
-
-            // Draws all custom lines and curves
-            for (auto& line : lines) {
-                if (line.drawable) {
-                    window->draw(*line.shape);
-                }
-            }
-            for (auto& curve : curves) {
-                if (curve.drawable) {
-                    window->draw(*curve.shape);
-                }
             }
 
             update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
@@ -953,12 +983,12 @@ int main()
                         sf::Vector2f prev_x_vals;
                         sf::Vector2f prev_y_vals;
                         if (i == 5) {
-                            prev_x_vals = ui.convert_resolution(sf::Vector2f(10, 42));
-                            prev_y_vals = ui.convert_resolution(sf::Vector2f(430, 460));
+                            prev_x_vals = ui.convert_resolution(prev_teleport_min);
+                            prev_y_vals = ui.convert_resolution(prev_tele_fifth_max);
                         }
                         if (i == 6) {
-                            prev_x_vals = ui.convert_resolution(sf::Vector2f(10, 42));
-                            prev_y_vals = ui.convert_resolution(sf::Vector2f(480, 510));
+                            prev_x_vals = ui.convert_resolution(prev_teleport_min);
+                            prev_y_vals = ui.convert_resolution(prev_tele_sixth_max);
                         }
                         float random_x = random_number_generator(std::tuple<int, int>(prev_x_vals.x, prev_x_vals.y));
                         float random_y = random_number_generator(std::tuple<int, int>(prev_y_vals.x, prev_y_vals.y));
@@ -1022,30 +1052,63 @@ int main()
             // Wind Physics
             if (wind_enabled) wind_sim(particles, horizontal_blow, vertical_blow);
 
-            // Draws the particle UI
-            for (int object = 0; object < UI_vectors.size(); object++) {
-                for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
-                    window->draw((*UI_vectors[object][rectangle]));
-                }
-
-                // Draws Preview Items
-                for (auto& preview : preview_particles) {
-                    window->draw(*preview);
-                }
-                window->draw(*preview_line.shape);
-                window->draw(*preview_curve.shape);
-                window->draw(wind_sprite);
-                window->draw(clear_sprite);
-            }
-
-            // Draws the text on top of UI
-            for (int text = 0; text < texts.size(); text++) {
-                window->draw(*texts.at(text));
-            }
-
             delete collisions_qt;
             delete space_qt;
         }
+
+        // DRAW EVERYTHING
+        //if (particles->size() > 3) {
+        //    int num_particles = particles->size();
+        //    int particles_per_thread = num_particles / num_threads;
+        //    std::vector<std::thread> threads;
+
+        //    for (int i = 0; i < num_threads; i++) {
+        //        int start_index = i * particles_per_thread;
+        //        int end_index = (i == num_threads - 1) ? num_particles : start_index + particles_per_thread;
+        //        threads.emplace_back(std::thread(draw_particles, std::cref(particles), std::cref(window), start_index, end_index));
+        //    }
+
+        //    // Wait for all threads to finish
+        //    for (auto& thread : threads) {
+        //        thread.join();
+        //    }
+        //}
+        // Draws Particles
+        for (auto& particle : (*particles)) window->draw(*particle->particle);
+
+        // Draws all custom lines and curves
+        for (auto& line : lines) {
+            if (line.drawable) {
+                window->draw(*line.shape);
+            }
+        }
+        for (auto& curve : curves) {
+            if (curve.drawable) {
+                window->draw(*curve.shape);
+            }
+        }
+
+        // Draws the particle UI
+        for (int object = 0; object < UI_vectors.size(); object++) {
+            for (int rectangle = 0; rectangle < UI_vectors[object].size(); rectangle++) {
+                window->draw((*UI_vectors[object][rectangle]));
+            }
+
+            // Draws Preview Items
+            for (auto& preview : preview_particles) {
+                window->draw(*preview);
+            }
+            window->draw(*preview_line.shape);
+            window->draw(*preview_curve.shape);
+            window->draw(wind_sprite);
+            window->draw(clear_sprite);
+        }
+
+        // Draws the text on top of UI
+        for (int text = 0; text < texts.size(); text++) {
+            window->draw(*texts.at(text));
+        }
+
         window->display();
     }
     return 0;
@@ -1055,8 +1118,7 @@ int main()
 TODO LIST
 
 Negative Mass and Positive Mass don't work in Zero Gravity
-Lines don't have proper collisions
+Lines don't have proper collisions (but they technically do)
 Friction is weird with wind
-Clear Items using the UI
 Make UI follow the player
 */
