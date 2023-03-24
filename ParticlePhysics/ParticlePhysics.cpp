@@ -556,17 +556,12 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
     float y = convert_y(coordinates.y);
     return sf::Vector2f(x, y);
 }
-void drawParticles(std::vector<Particle*>* particles, sf::RenderWindow* window, int start_index, int end_index) {
-    for (int i = start_index; i < end_index; i++) {
-        window->draw(*(*particles)[i]->particle);
-    }
-}
 int main()
 {
-    int fps = 165;
+    int fps = 60;
     float zoom_val = 1;
     int num_threads = 4;
-    float substeps = 10.f;
+    float substeps = 8.f;
     float deltaTime = 1.f / fps;
     float subdt = deltaTime / substeps;
 
@@ -638,9 +633,9 @@ int main()
     int preview_temp = 0;
     bool heating = true;
 
-    sf::Vector2f prev_teleport_min(10, 42);
-    sf::Vector2f prev_tele_fifth_max(430, 460);
-    sf::Vector2f prev_tele_sixth_max(480, 510);
+    sf::Vector2f prev_teleport_min(5, 28);
+    sf::Vector2f prev_tele_fifth_max(280, 310);
+    sf::Vector2f prev_tele_sixth_max(315, 345);
 
     sf::VertexArray* plv = new sf::VertexArray(sf::LineStrip, 50);
     Line preview_line(plv, 50);
@@ -663,6 +658,9 @@ int main()
     wind_sprite.setScale(.25, .25);
     clear_sprite.setPosition(convert_resolution(sf::Vector2f(7, 678)));
     clear_sprite.setScale(.25, .25);
+
+    // SETTING UP THREADS
+    std::vector<std::thread> threads(num_threads);
 
     sf::Vector2i curr_mouse_pos = sf::Mouse::getPosition(*window);
     while (window->isOpen())
@@ -701,9 +699,9 @@ int main()
                 }
                 wind_sprite.setPosition(wind_sprite.getPosition() + sf::Vector2f(change));
                 clear_sprite.setPosition(clear_sprite.getPosition() + sf::Vector2f(change));
-                prev_teleport_min = prev_teleport_min + sf::Vector2f(change);
-                prev_tele_fifth_max = prev_tele_fifth_max + sf::Vector2f(change);
-                prev_tele_sixth_max = prev_tele_sixth_max + sf::Vector2f(change);
+                prev_teleport_min = prev_teleport_min + sf::Vector2f(change.x, change.x);
+                prev_tele_fifth_max = prev_tele_fifth_max + sf::Vector2f(change.y, change.y);
+                prev_tele_sixth_max = prev_tele_sixth_max + sf::Vector2f(change.y, change.y);
                 curr_mouse_pos = mouse_pos;
             }
             if (event.type == sf::Event::MouseButtonPressed and event.type != sf::Event::MouseButtonReleased) {
@@ -863,15 +861,14 @@ int main()
                 if (gravity == 0) space_qt->insert(point);
             }
 
-            // DRAW EVERYTHING
+            // Updating Threads
             int num_particles = particles->size();
             int particles_per_thread = num_particles / num_threads;
-            std::vector<std::thread> threads;
 
             for (int i = 0; i < num_threads; i++) {
                 int start_index = i * particles_per_thread;
                 int end_index = (i == num_threads - 1) ? num_particles + (num_particles % num_threads) : start_index + particles_per_thread;
-                threads.emplace_back(std::thread(update_particles, particles, subdt, gravity, collisions_qt, space_qt, lines, curves));
+                threads[i] = std::thread(update_particles, particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
             }
 
             // Wait for all threads to finish
@@ -983,18 +980,15 @@ int main()
                 // Update teleport particle
                 else if (i == 6 || (the_chosen_one == 2 && i == 5)) {
                     if (random_number * percent_divisor <= teleport_chance) {
-                        sf::Vector2f prev_x_vals;
-                        sf::Vector2f prev_y_vals;
+                        sf::Vector2f prev_tele;
                         if (i == 5) {
-                            prev_x_vals = ui.convert_resolution(prev_teleport_min);
-                            prev_y_vals = ui.convert_resolution(prev_tele_fifth_max);
+                            prev_tele = prev_tele_fifth_max;
                         }
                         if (i == 6) {
-                            prev_x_vals = ui.convert_resolution(prev_teleport_min);
-                            prev_y_vals = ui.convert_resolution(prev_tele_sixth_max);
+                            prev_tele = prev_tele_sixth_max;
                         }
-                        float random_x = random_number_generator(std::tuple<int, int>(prev_x_vals.x, prev_x_vals.y));
-                        float random_y = random_number_generator(std::tuple<int, int>(prev_y_vals.x, prev_y_vals.y));
+                        float random_x = random_number_generator(std::tuple<int, int>(prev_teleport_min.x, prev_teleport_min.y));
+                        float random_y = random_number_generator(std::tuple<int, int>(prev_tele.x, prev_tele.y));
                         preview_particles[i]->setPosition(random_x, random_y);
                     }
                 }
@@ -1103,5 +1097,6 @@ int main()
 /*
 TODO LIST
 
+Bop it tells you to cry about it :>
 Make UI follow the player
 */
