@@ -159,7 +159,7 @@ void UserInterface::check_collision(std::string& UI_render_type, int& eventtype,
                     // Adjusting The Number of Particles to Spawn
                     if (j == 0) { gravity -= .01 * modifier; }
                     else if (j == 2) { gravity += .01 * modifier; }
-                    if (gravity < 0) { gravity = 0; }
+                    if (gravity < 0.001 && gravity > -0.001) { gravity = 0; }
                     texts[9]->setString(std::to_string(gravity));
                 }
                 else if (i == 11) {

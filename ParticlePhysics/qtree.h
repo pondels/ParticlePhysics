@@ -136,7 +136,7 @@ class Barnes_Hut : public QuadTree {
 protected:
 	const float GRAV_CONST = 25.f;
 	const float SOFTENER = .1f;
-	const float THETA = 0.7f;
+	const float THETA = 0.01f;
 
 	// Children containing more particles
 	Barnes_Hut* northWestBarnes;
@@ -164,7 +164,7 @@ public:
 	void update_com(Point point) {
 		x_sum += point.x * point.mass;
 		y_sum += point.y * point.mass;
-		total_mass += point.mass;
+		total_mass += abs(point.mass);
 		center_of_mass.x = x_sum / total_mass;
 		center_of_mass.y = y_sum / total_mass;
 	}
@@ -224,7 +224,7 @@ public:
 
 		// Boundary contains particle that's not itself
 		if (points->size() > 0 && (*points)[0].index != index) {
-			//if() {
+			
 			Point temp_particle = (*points)[0];
 			float temp_mass = temp_particle.mass;
 
@@ -241,7 +241,7 @@ public:
 			float s = boundary.w;
 			float d = std::sqrt((center_of_mass.x - main_pos.x) * (center_of_mass.x - main_pos.x) + (center_of_mass.y - main_pos.y) * (center_of_mass.y - main_pos.y));;
 			if (d > .0001) {
-				if (s / d < THETA) {
+				if (s / d <  THETA) {
 					auto force = GRAV_CONST * main_particle->mass * total_mass / ((d * d) + SOFTENER);
 
 					x_shift += force * (center_of_mass.x - main_pos.x) / abs(d);

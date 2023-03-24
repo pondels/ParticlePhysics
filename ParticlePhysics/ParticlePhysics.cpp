@@ -32,7 +32,9 @@ https://cplusplus.com/reference/random/?kw=%3Crandom%3E
 int biggest_radius = 0;
 const float grav_const = 6.6743 * pow(10, -6);
 const float pi = 3.14159265;
-float gravity = 9.81f;
+float gravity = 0.0f;
+const float softener = .1f;
+const float GRAV_CONST = 25.f;
 sf::Vector2f windowsize(1280, 720);
 sf::Vector2f quadtreesize(1280, 720);
 
@@ -473,29 +475,18 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut* space_qt) {
+void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut* space_qt, int i) {
 
-    std::vector<std::tuple<float, float>> transformations;
+    float x_shift = 0;
+    float y_shift = 0;
+    space_qt->calculate_force(i, particles[i], x_shift, y_shift);
+    std::tuple<float, float> transformation(x_shift, y_shift);
 
-    const float softener = .1f;
-    const float GRAV_CONST = 25.f;
-
-    for (int i = 0; i < particles.size(); i++) {
-        float x_shift = 0;
-        float y_shift = 0;
-        space_qt->calculate_force(i, particles[i], x_shift, y_shift);
-        std::tuple<float, float> transformation(x_shift, y_shift);
-        transformations.push_back(transformation);
-    }
-
-    // Updates the particles with their respective x and y shift
-    for (int i = 0; i < particles.size(); i++) {
-        sf::Vector2f pos = particles[i]->particle->getPosition();
-        float mass = particles[i]->mass;
-        particles[i]->velocity->x += deltaTime * std::get<0>(transformations[i]) / mass;
-        particles[i]->velocity->y += deltaTime * std::get<1>(transformations[i]) / mass;
-        particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
-    }
+    sf::Vector2f pos = particles[i]->particle->getPosition();
+    float mass = particles[i]->mass;
+    particles[i]->velocity->x += deltaTime * std::get<0>(transformation) / mass;
+    particles[i]->velocity->y += deltaTime * std::get<1>(transformation) / mass;
+    particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
 }
 void wind_sim(std::vector<Particle*>* particles, float horiztonal_blow, float vertical_blow) {
     for (auto& particle : (*particles)) {
@@ -512,8 +503,8 @@ void update_particles(std::vector<Particle*>* particles, float deltaTime, float 
         }
     }
     else {
-        space_update_position((*particles), deltaTime, space_qt);
         for (int i = 0; i < particles->size(); i++) {
+            space_update_position((*particles), deltaTime, space_qt, i);
             check_collisions(particles, (*particles)[i], (*particles)[i]->particle, i, collisions_qt, lines, curves);
         }
     }
@@ -590,7 +581,7 @@ int main()
     int mass = 150;
     int radius = 5;
     int modifier = 1;
-    int particle_amount = 1844;
+    int particle_amount = 1;
     int red = 255;
     int green = 0;
     int blue = 0;
@@ -672,8 +663,6 @@ int main()
     wind_sprite.setScale(.25, .25);
     clear_sprite.setPosition(convert_resolution(sf::Vector2f(7, 678)));
     clear_sprite.setScale(.25, .25);
-
-    std::thread thread1;
 
     sf::Vector2i curr_mouse_pos = sf::Mouse::getPosition(*window);
     while (window->isOpen())
@@ -875,23 +864,20 @@ int main()
             }
 
             // DRAW EVERYTHING
-            if (particles->size() % num_threads == 0) {
-                int num_particles = particles->size();
-                int particles_per_thread = num_particles / num_threads;
-                std::vector<std::thread> threads;
+            int num_particles = particles->size();
+            int particles_per_thread = num_particles / num_threads;
+            std::vector<std::thread> threads;
 
-                for (int i = 0; i < num_threads; i++) {
-                    int start_index = i * particles_per_thread;
-                    int end_index = (i == num_threads - 1) ? num_particles : start_index + particles_per_thread;
-                    threads.emplace_back(std::thread(update_particles, particles, subdt, gravity, collisions_qt, space_qt, lines, curves));
-                }
-
-                // Wait for all threads to finish
-                for (auto& thread : threads) {
-                    thread.join();
-                }
+            for (int i = 0; i < num_threads; i++) {
+                int start_index = i * particles_per_thread;
+                int end_index = (i == num_threads - 1) ? num_particles + (num_particles % num_threads) : start_index + particles_per_thread;
+                threads.emplace_back(std::thread(update_particles, particles, subdt, gravity, collisions_qt, space_qt, lines, curves));
             }
-            //update_particles(particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
+
+            // Wait for all threads to finish
+            for (auto& thread : threads) {
+                thread.join();
+            }
 
             // Chances of particles using their abilities
             for (int step = 0; step < particles->size(); step++) {
@@ -1117,8 +1103,5 @@ int main()
 /*
 TODO LIST
 
-Negative Mass and Positive Mass don't work in Zero Gravity
-Lines don't have proper collisions (but they technically do)
-Friction is weird with wind
 Make UI follow the player
 */
