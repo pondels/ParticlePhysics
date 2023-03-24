@@ -558,10 +558,10 @@ sf::Vector2f convert_resolution(sf::Vector2f coordinates) {
 }
 int main()
 {
-    int fps = 60;
+    int fps = 165;
     float zoom_val = 1;
     int num_threads = 4;
-    float substeps = 8.f;
+    float substeps = 10.f;
     float deltaTime = 1.f / fps;
     float subdt = deltaTime / substeps;
 
@@ -1098,5 +1098,4 @@ int main()
 TODO LIST
 
 Bop it tells you to cry about it :>
-Make UI follow the player
 */
