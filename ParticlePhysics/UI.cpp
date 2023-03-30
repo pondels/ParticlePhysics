@@ -50,7 +50,7 @@ void UserInterface::move_UI(sf::Vector2i move) {
     }
 }
 void UserInterface::check_collision(std::string& UI_render_type, int& eventtype, sf::Vector2i mouse, int& red, int& green, int& blue, int& vel_x, int& vel_y,
-    int& mass, int& radius, int& modifier, int& particle_amount, int& temperature, bool& rainbow_mode, float& viscosity, float& h_blow, float& v_blow, float& gravity,
+    int& mass, int& radius, int& modifier, int& particle_amount, int& temperature, bool& rainbow_mode, float& viscosity, int& h_blow, int& v_blow, float& gravity,
     bool& draw_particles, bool& move_window, bool& draw_line, bool& draw_curve, bool& wind_enabled, bool& consume, bool& explode, bool& radioactive, bool& teleportation, bool& particle_swap,
     bool& iridescent, std::string& type) {
 
@@ -122,7 +122,7 @@ void UserInterface::check_collision(std::string& UI_render_type, int& eventtype,
                     if (radius < 1) { radius = 1; }
                     if (radius > windowsize.y / 2) { radius = windowsize.y / 2; }
                     preview_particles[0]->setRadius(radius);
-                    preview_particles[0]->setPosition(convert_resolution(sf::Vector2f(1730 - radius, 70 - radius)));
+                    preview_particles[0]->setOrigin(radius, radius);
                     texts[3]->setString(std::to_string(radius));
                 }
                 else if (i == 6) {
@@ -149,21 +149,21 @@ void UserInterface::check_collision(std::string& UI_render_type, int& eventtype,
                     texts[7]->setString(std::to_string(particle_amount));
                 }
                 else if (i == 9) {
-                    // Adjusting The Number of Particles to Spawn
+                    // Adjusting The Modifier
                     if (j == 0) { modifier--; }
                     else if (j == 2) { modifier++; }
                     if (modifier < 1) { modifier = 1; }
                     texts[8]->setString(std::to_string(modifier));
                 }
                 else if (i == 10) {
-                    // Adjusting The Number of Particles to Spawn
+                    // Adjusting The Gravity
                     if (j == 0) { gravity -= .01 * modifier; }
                     else if (j == 2) { gravity += .01 * modifier; }
                     if (gravity < 0.001 && gravity > -0.001) { gravity = 0; }
                     texts[9]->setString(std::to_string(gravity));
                 }
                 else if (i == 11) {
-                    // Adjusting The Number of Particles to Spawn
+                    // Triggering Rainbow Mode
                     if (j == 0) {
                         if (rainbow_mode) {
                             rainbow_mode = false;
@@ -188,6 +188,8 @@ void UserInterface::check_collision(std::string& UI_render_type, int& eventtype,
                     if (j == 2) { h_blow++; }
                     if (j == 3) { v_blow--; }
                     if (j == 5) { v_blow++; }
+                    if (j < 3)  texts[11]->setString(std::to_string(h_blow));
+                    else        texts[12]->setString(std::to_string(v_blow));
                 }
                 else if (i == 14) {
                     // Moving Window
@@ -438,60 +440,60 @@ void UserInterface::PictureDisplay() {
     sf::Vector2f colorbox =  convert_resolution(sf::Vector2f(40, 40));
 
     // RGB Buttons
-    sf::RectangleShape* red =    make_bar(colorbox, pastel_red, convert_resolution(sf::Vector2f(1920 + 75, 125)));
-    sf::RectangleShape* rplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 115, 125)));
-    sf::RectangleShape* rminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 55, 125)));
-    sf::RectangleShape* green =  make_bar(colorbox, pastel_green, convert_resolution(sf::Vector2f(1920 + 190, 125)));
-    sf::RectangleShape* gplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 125)));
-    sf::RectangleShape* gminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 125)));
-    sf::RectangleShape* blue =   make_bar(colorbox, pastel_blue, convert_resolution(sf::Vector2f(1920 + 305, 125)));
-    sf::RectangleShape* bplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 345, 125)));
-    sf::RectangleShape* bminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 285, 125)));
+    sf::RectangleShape* red =    make_bar(colorbox, pastel_red,         convert_resolution(sf::Vector2f(1920 + 75, 125)));
+    sf::RectangleShape* rplus =  make_bar(plusminus, light_grey,        convert_resolution(sf::Vector2f(1920 + 115, 125)));
+    sf::RectangleShape* rminus = make_bar(plusminus, light_grey,        convert_resolution(sf::Vector2f(1920 + 55, 125)));
+    sf::RectangleShape* green =  make_bar(colorbox, pastel_green,       convert_resolution(sf::Vector2f(1920 + 190, 125)));
+    sf::RectangleShape* gplus =  make_bar(plusminus, light_grey,        convert_resolution(sf::Vector2f(1920 + 230, 125)));
+    sf::RectangleShape* gminus = make_bar(plusminus, light_grey,        convert_resolution(sf::Vector2f(1920 + 170, 125)));
+    sf::RectangleShape* blue =   make_bar(colorbox, pastel_blue,        convert_resolution(sf::Vector2f(1920 + 305, 125)));
+    sf::RectangleShape* bplus =  make_bar(plusminus, light_grey,        convert_resolution(sf::Vector2f(1920 + 345, 125)));
+    sf::RectangleShape* bminus = make_bar(plusminus, light_grey,        convert_resolution(sf::Vector2f(1920 + 285, 125)));
 
     // Radius, Size, and Velocity
-    sf::RectangleShape* radius =    make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 200)));
-    sf::RectangleShape* radplus =   make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 200)));
-    sf::RectangleShape* radminus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 200)));
-    sf::RectangleShape* mass =      make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 200)));
-    sf::RectangleShape* massplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 200)));
-    sf::RectangleShape* massminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 200)));
-    sf::RectangleShape* velocityx = make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 132, 260)));
-    sf::RectangleShape* velxplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 260)));
-    sf::RectangleShape* velxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 260)));
-    sf::RectangleShape* velocityy = make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 247, 260)));
-    sf::RectangleShape* velyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 260)));
-    sf::RectangleShape* velyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 260)));
+    sf::RectangleShape* radius =    make_bar(colorbox, pastel_orange,   convert_resolution(sf::Vector2f(1920 + 132, 200)));
+    sf::RectangleShape* radplus =   make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 172, 200)));
+    sf::RectangleShape* radminus =  make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 112, 200)));
+    sf::RectangleShape* mass =      make_bar(colorbox, pastel_yellow,   convert_resolution(sf::Vector2f(1920 + 247, 200)));
+    sf::RectangleShape* massplus =  make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 287, 200)));
+    sf::RectangleShape* massminus = make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 227, 200)));
+    sf::RectangleShape* velocityx = make_bar(colorbox, purple,          convert_resolution(sf::Vector2f(1920 + 132, 270)));
+    sf::RectangleShape* velxplus =  make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 172, 270)));
+    sf::RectangleShape* velxminus = make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 112, 270)));
+    sf::RectangleShape* velocityy = make_bar(colorbox, purple,          convert_resolution(sf::Vector2f(1920 + 247, 270)));
+    sf::RectangleShape* velyplus =  make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 287, 270)));
+    sf::RectangleShape* velyminus = make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 227, 270)));
 
     // Number of Particles to Spawn in
-    sf::RectangleShape* amount =   make_bar(colorbox, pastel_orange, convert_resolution(sf::Vector2f(1920 + 132, 320)));
-    sf::RectangleShape* amtplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 320)));
-    sf::RectangleShape* amtminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 320)));
+    sf::RectangleShape* amount =   make_bar(colorbox, pastel_orange,    convert_resolution(sf::Vector2f(1920 + 132, 340)));
+    sf::RectangleShape* amtplus =  make_bar(plusminus, light_grey,      convert_resolution(sf::Vector2f(1920 + 172, 340)));
+    sf::RectangleShape* amtminus = make_bar(plusminus, light_grey,      convert_resolution(sf::Vector2f(1920 + 112, 340)));
 
     // Multiplier for variable adjustments
-    sf::RectangleShape* multiplier = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 247, 320)));
-    sf::RectangleShape* multiplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 320)));
-    sf::RectangleShape* multiminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 320)));
+    sf::RectangleShape* multiplier = make_bar(colorbox, pastel_yellow,  convert_resolution(sf::Vector2f(1920 + 247, 340)));
+    sf::RectangleShape* multiplus =  make_bar(plusminus, light_grey,    convert_resolution(sf::Vector2f(1920 + 287, 340)));
+    sf::RectangleShape* multiminus = make_bar(plusminus, light_grey,    convert_resolution(sf::Vector2f(1920 + 227, 340)));
 
     // Gravity constant
-    sf::RectangleShape* gravity =   make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 380)));
-    sf::RectangleShape* gravplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 380)));
-    sf::RectangleShape* gravminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 380)));
+    sf::RectangleShape* gravity =   make_bar(colorbox, pastel_yellow,   convert_resolution(sf::Vector2f(1920 + 190, 410)));
+    sf::RectangleShape* gravplus =  make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 230, 410)));
+    sf::RectangleShape* gravminus = make_bar(plusminus, light_grey,     convert_resolution(sf::Vector2f(1920 + 170, 410)));
 
     // Rainbow Mode
-    sf::RectangleShape* rainbow = make_bar(colorbox, white, convert_resolution(sf::Vector2f(1920 + 190, 450)));
+    sf::RectangleShape* rainbow =   make_bar(colorbox, white,           convert_resolution(sf::Vector2f(1920 + 190, 460)));
 
     // Temperature
-    sf::RectangleShape* temperature = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 490)));
-    sf::RectangleShape* tempplus =    make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 230, 490)));
-    sf::RectangleShape* tempminus =   make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 170, 490)));
+    sf::RectangleShape* temperature = make_bar(colorbox, pastel_yellow, convert_resolution(sf::Vector2f(1920 + 190, 530)));
+    sf::RectangleShape* tempplus =    make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 230, 530)));
+    sf::RectangleShape* tempminus =   make_bar(plusminus, light_grey,   convert_resolution(sf::Vector2f(1920 + 170, 530)));
 
     // Wind Values
-    sf::RectangleShape* windx =      make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 132, 560)));
-    sf::RectangleShape* windxplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 172, 560)));
-    sf::RectangleShape* windxminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 112, 560)));
-    sf::RectangleShape* windy =      make_bar(colorbox, purple, convert_resolution(sf::Vector2f(1920 + 247, 560)));
-    sf::RectangleShape* windyplus =  make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 287, 560)));
-    sf::RectangleShape* windyminus = make_bar(plusminus, light_grey, convert_resolution(sf::Vector2f(1920 + 227, 560)));
+    sf::RectangleShape* windx =      make_bar(colorbox, purple,         convert_resolution(sf::Vector2f(1920 + 132, 600)));
+    sf::RectangleShape* windxplus =  make_bar(plusminus, light_grey,    convert_resolution(sf::Vector2f(1920 + 172, 600)));
+    sf::RectangleShape* windxminus = make_bar(plusminus, light_grey,    convert_resolution(sf::Vector2f(1920 + 112, 600)));
+    sf::RectangleShape* windy =      make_bar(colorbox, purple,         convert_resolution(sf::Vector2f(1920 + 247, 600)));
+    sf::RectangleShape* windyplus =  make_bar(plusminus, light_grey,    convert_resolution(sf::Vector2f(1920 + 287, 600)));
+    sf::RectangleShape* windyminus = make_bar(plusminus, light_grey,    convert_resolution(sf::Vector2f(1920 + 227, 600)));
 
     // Left Bar
 
@@ -660,31 +662,66 @@ void UserInterface::PictureDisplay() {
     vectors[27].push_back(clear_fg);
 }
 
-void UserInterface::TextDisplay(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature) {
-    sf::Text* velxstring = new sf::Text(std::to_string(start_vel_x), font);
-    sf::Text* velystring = new sf::Text(std::to_string(start_vel_y), font);
-    sf::Text* masstring = new sf::Text(std::to_string(mass), font);
-    sf::Text* radiustring = new sf::Text(std::to_string(radius), font);
-    sf::Text* modistring = new sf::Text(std::to_string(modifier), font);
-    sf::Text* part_amt_string = new sf::Text(std::to_string(particle_amount), font);
-    sf::Text* red_string = new sf::Text(std::to_string(red), font);
-    sf::Text* green_string = new sf::Text(std::to_string(green), font);
-    sf::Text* blue_string = new sf::Text(std::to_string(blue), font);
-    sf::Text* grav_string = new sf::Text(std::to_string(gravity), font);
-    sf::Text* temp_string = new sf::Text(std::to_string(temperature), font);
+void UserInterface::TextDisplay(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature, int windx, int windy) {
+    sf::Text* velxstring =      new sf::Text(std::to_string(start_vel_x),           font);
+    sf::Text* velystring =      new sf::Text(std::to_string(start_vel_y),           font);
+    sf::Text* masstring =       new sf::Text(std::to_string(mass),                  font);
+    sf::Text* radiustring =     new sf::Text(std::to_string(radius),                font);
+    sf::Text* modistring =      new sf::Text(std::to_string(modifier),              font);
+    sf::Text* part_amt_string = new sf::Text(std::to_string(particle_amount),       font);
+    sf::Text* red_string =      new sf::Text(std::to_string(red),                   font);
+    sf::Text* green_string =    new sf::Text(std::to_string(green),                 font);
+    sf::Text* blue_string =     new sf::Text(std::to_string(blue),                  font);
+    sf::Text* grav_string =     new sf::Text(std::to_string(gravity),               font);
+    sf::Text* temp_string =     new sf::Text(std::to_string(temperature),           font);
+    sf::Text* windx_string =    new sf::Text(std::to_string(windx),                 font);
+    sf::Text* windy_string =    new sf::Text(std::to_string(windy),                 font);
 
-    custom_message(velxstring, convert_resolution(sf::Vector2f(1920 + 132, 265)));
-    custom_message(velystring, convert_resolution(sf::Vector2f(1920 + 247, 265)));
-    custom_message(masstring, convert_resolution(sf::Vector2f(1920 + 247, 205)));
-    custom_message(radiustring, convert_resolution(sf::Vector2f(1920 + 132, 205)));
-    custom_message(modistring, convert_resolution(sf::Vector2f(1920 + 247, 325)));
-    custom_message(part_amt_string, convert_resolution(sf::Vector2f(1920 + 132, 325)));
-    custom_message(red_string, convert_resolution(sf::Vector2f(1920 + 75, 130)));
-    custom_message(green_string, convert_resolution(sf::Vector2f(1920 + 190, 130)));
-    custom_message(blue_string, convert_resolution(sf::Vector2f(1920 + 305, 130)));
-    custom_message(grav_string, convert_resolution(sf::Vector2f(1920 + 190, 385)));
-    custom_message(temp_string, convert_resolution(sf::Vector2f(1920 + 190, 465)));
+    sf::Text* red_text =        new sf::Text("RED",         font);
+    sf::Text* green_text =      new sf::Text("GREEN",       font);
+    sf::Text* blue_text =       new sf::Text("BLUE",        font);
+    sf::Text* size_text =       new sf::Text("SIZE",        font);
+    sf::Text* mass_text =       new sf::Text("MASS",        font);
+    sf::Text* vx_text =         new sf::Text("VEL X",       font);
+    sf::Text* vy_text =         new sf::Text("VEL Y",       font);
+    sf::Text* amount_text =     new sf::Text("SUMMON #",    font);
+    sf::Text* multiplier_text = new sf::Text("MULTIPLIER",  font);
+    sf::Text* gravity_text =    new sf::Text("GRAVITY",     font);
+    sf::Text* rainbow_text =    new sf::Text("?",           font);
+    sf::Text* temp_text =       new sf::Text("TEMPERATURE", font);
+    sf::Text* wx_text =         new sf::Text("WIND X",      font);
+    sf::Text* wy_text =         new sf::Text("WIND Y",      font);
 
+    custom_message(velxstring,      convert_resolution(sf::Vector2f(1920 + 132, 275)));
+    custom_message(velystring,      convert_resolution(sf::Vector2f(1920 + 247, 275)));
+    custom_message(masstring,       convert_resolution(sf::Vector2f(1920 + 247, 205)));
+    custom_message(radiustring,     convert_resolution(sf::Vector2f(1920 + 132, 205)));
+    custom_message(modistring,      convert_resolution(sf::Vector2f(1920 + 247, 345)));
+    custom_message(part_amt_string, convert_resolution(sf::Vector2f(1920 + 132, 345)));
+    custom_message(red_string,      convert_resolution(sf::Vector2f(1920 + 75,  130)));
+    custom_message(green_string,    convert_resolution(sf::Vector2f(1920 + 190, 130)));
+    custom_message(blue_string,     convert_resolution(sf::Vector2f(1920 + 305, 130)));
+    custom_message(grav_string,     convert_resolution(sf::Vector2f(1920 + 190, 415)));
+    custom_message(temp_string,     convert_resolution(sf::Vector2f(1920 + 190, 540)));
+    custom_message(windx_string,    convert_resolution(sf::Vector2f(1920 + 135, 605)));
+    custom_message(windy_string,    convert_resolution(sf::Vector2f(1920 + 250, 605)));
+    
+    custom_message(red_text,        convert_resolution(sf::Vector2f(1920 +  75,  95)));
+    custom_message(green_text,      convert_resolution(sf::Vector2f(1920 + 180,  95)));
+    custom_message(blue_text,       convert_resolution(sf::Vector2f(1920 + 300,  95)));
+    custom_message(size_text,       convert_resolution(sf::Vector2f(1920 + 127, 170)));
+    custom_message(mass_text,       convert_resolution(sf::Vector2f(1920 + 242, 170)));
+    custom_message(vx_text,         convert_resolution(sf::Vector2f(1920 + 127, 240)));
+    custom_message(vy_text,         convert_resolution(sf::Vector2f(1920 + 242, 240)));
+    custom_message(amount_text,     convert_resolution(sf::Vector2f(1920 +  75, 310)));
+    custom_message(multiplier_text, convert_resolution(sf::Vector2f(1920 + 220, 310)));
+    custom_message(gravity_text,    convert_resolution(sf::Vector2f(1920 + 160, 380)));
+    custom_message(rainbow_text,    convert_resolution(sf::Vector2f(1920 + 200, 465)));
+    custom_message(temp_text,       convert_resolution(sf::Vector2f(1920 + 120, 500)));
+    custom_message(wx_text,         convert_resolution(sf::Vector2f(1920 + 110, 572)));
+    custom_message(wy_text,         convert_resolution(sf::Vector2f(1920 + 230, 572)));
+
+    // Numbers
     texts.push_back(red_string);
     texts.push_back(green_string);
     texts.push_back(blue_string);
@@ -696,9 +733,27 @@ void UserInterface::TextDisplay(int start_vel_x, int start_vel_y, int mass, int 
     texts.push_back(modistring);
     texts.push_back(grav_string);
     texts.push_back(temp_string);
+    texts.push_back(windx_string);
+    texts.push_back(windy_string);
+
+    // Words
+    texts.push_back(red_text);
+    texts.push_back(green_text);
+    texts.push_back(blue_text);
+    texts.push_back(size_text);
+    texts.push_back(mass_text);
+    texts.push_back(vx_text);
+    texts.push_back(vy_text);
+    texts.push_back(amount_text);
+    texts.push_back(multiplier_text);
+    texts.push_back(gravity_text);
+    texts.push_back(rainbow_text);
+    texts.push_back(temp_text);
+    texts.push_back(wx_text);
+    texts.push_back(wy_text);
 }
 
-void UserInterface::create_UI(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature) {
+void UserInterface::create_UI(int start_vel_x, int start_vel_y, int mass, int radius, int modifier, int particle_amount, int red, int green, int blue, float gravity, int temperature, float wx, float wy) {
     PictureDisplay();
-    TextDisplay(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature);
+    TextDisplay(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature, wx, wy);
 }
