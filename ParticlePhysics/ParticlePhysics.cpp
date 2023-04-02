@@ -922,13 +922,15 @@ int main()
                             float random_particle = random_number_generator(std::tuple<int, int>(0, int(particles->size() - 1)));
                             if ((*particles)[random_particle]->swap) {
                                 sf::Vector2f pos1 =  (*particles)[step]->particle->getPosition();
-                                std::unique_ptr<sf::Vector2f>& vel1 = (*particles)[step]->velocity;
                                 sf::Vector2f pos2 =  (*particles)[random_particle]->particle->getPosition();
-                                std::unique_ptr<sf::Vector2f>& vel2 = (*particles)[random_particle]->velocity;
                                 (*particles)[step]->particle->setPosition(pos2);
                                 (*particles)[random_particle]->particle->setPosition(pos1);
-                                (*particles)[step]->velocity = std::move(vel2);
-                                (*particles)[random_particle]->velocity = std::move(vel1);
+                                
+                                std::unique_ptr<sf::Vector2f>& vel1 = (*particles)[step]->velocity;
+                                std::unique_ptr<sf::Vector2f>& vel2 = (*particles)[random_particle]->velocity;
+                                
+                                // Swaps the velocity's references
+                                std::swap(vel1, vel2);
                             }
                         }
                     }
