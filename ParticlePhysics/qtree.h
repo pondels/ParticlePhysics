@@ -218,7 +218,7 @@ public:
 		
 		return true;
 	}
-	void calculate_force(int index, Particle* main_particle, float& x_shift, float& y_shift) {
+	void calculate_force(int index, std::unique_ptr<Particle>& main_particle, float& x_shift, float& y_shift) {
 
 		sf::Vector2f main_pos = main_particle->particle->getPosition();
 

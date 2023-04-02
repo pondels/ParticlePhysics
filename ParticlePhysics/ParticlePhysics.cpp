@@ -10,6 +10,7 @@
 #include "UI.h"
 #include "QTree.h"
 #include "shapes.h"
+#include <utility>
 
 /*
 
@@ -101,7 +102,7 @@ sf::Color fire_color_updater(float temp) {
     sf::Color particle_color = sf::Color(R, G, B);
     return particle_color;
 }
-void chernobyl_particle(Particle* particle, int number) {
+void chernobyl_particle(std::unique_ptr<Particle>& particle, int number) {
 
     //      Makes a particle smaller upon impact
     //      Makes a particle less dense upon impact
@@ -136,12 +137,13 @@ void chernobyl_particle(Particle* particle, int number) {
     }
 
 }
-void inherit_properties(Particle* particle1, Particle* particle2) {
+void inherit_properties(std::unique_ptr<Particle>& particle1, std::unique_ptr<Particle>& particle2) {
 
     // First particle -  Particle receiving properties
     // Second particle - Particle transferring properties
 
     particle1->consume = (particle2->consume) ? true : particle1->consume;
+    particle1->radius = particle1->particle->getRadius();
     //particle1->type = (particle2->type == "fire") ? "fire" : particle1->type;
     //particle1->viscosity *= particle2->viscosity;
     particle1->temperature += particle2->temperature;
@@ -161,10 +163,11 @@ bool vertical_overlap(float y1, float y2, float r1, float r2) {
     return false;
 }
 bool horizontal_overlap(float x1, float x2, float r1, float r2) {
+    // This project might actually be driving me insane
     if (abs(x1 - x2) - (r1 + r2) < 0) return true;
     return false;
 }
-template <typename T> void line_collision(Particle* particle, T lines) {
+template <typename T> void line_collision(std::unique_ptr<Particle>& particle, T lines) {
 
     float restitution = .9f;
     sf::Vector2f point = particle->particle->getPosition();
@@ -219,7 +222,16 @@ template <typename T> void line_collision(Particle* particle, T lines) {
         }
     }
 }
-void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf::CircleShape* shape, int index, QuadTree* qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves, std::vector<int>& remove_indices, std::vector<Particle*>& new_particles) {
+void check_collisions(
+    std::unique_ptr<std::vector<std::unique_ptr<Particle>>>& particles,
+    std::unique_ptr<Particle>& particle,
+    std::unique_ptr<sf::CircleShape>& shape,
+    int index,
+    std::unique_ptr<QuadTree>& qt,
+    std::vector<Line> lines,
+    std::vector<Bezier_Curve> curves,
+    std::unique_ptr<std::vector<int>>& remove_indices,
+    std::unique_ptr<std::vector<std::unique_ptr<Particle>>>& new_particles) {
     // Update Direction & Speed of particle based on collisions.
 
     // Rate at which energy is lost against the wall/floor
@@ -272,7 +284,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
     float y2 = shape->getPosition().y;
     float r2 = particle->radius;
     double m2 = abs(particle->mass);
-    sf::Vector2f* v2 = particle->velocity;
+    std::unique_ptr<sf::Vector2f>& v2 = particle->velocity;
 
     for (int i = 0; i < points.size(); i++) {
         int p_i = points.at(i).index;
@@ -283,7 +295,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
             float y1 = (*particles)[p_i]->particle->getPosition().y;
             float r1 = (*particles)[p_i]->radius;
             double m1 = abs((*particles)[p_i]->mass);
-            sf::Vector2f* v1 = (*particles)[p_i]->velocity;
+            std::unique_ptr<sf::Vector2f>& v1 = (*particles)[p_i]->velocity;
 
             if (horizontal_overlap(x1, x2, r1, r2)) {
                 if (vertical_overlap(y1, y2, r1, r2)) {
@@ -312,20 +324,20 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
                             // Add radius and mass to the particle the consumes and remove the other particle
                             if (particle->consume) {
                                 // Banishing the particle to the shadow realm
-                                remove_indices.push_back(p_i);
                                 particle->mass = new_mass;
                                 particle->radius = new_radius;
                                 particle->particle->setRadius(new_radius);
                                 particle->particle->setOrigin(new_radius, new_radius);
+                                remove_indices->emplace_back(p_i);
                                 inherit_properties(particle, (*particles)[p_i]);
                             }
                             else {
                                 // The particle has been consumed so there's no reason for it to meet new friends
-                                remove_indices.push_back(index);
                                 (*particles)[p_i]->mass = new_mass;
                                 (*particles)[p_i]->radius = new_radius;
                                 (*particles)[p_i]->particle->setRadius(new_radius);
                                 (*particles)[p_i]->particle->setOrigin(new_radius, new_radius);
+                                remove_indices->emplace_back(index);
                                 inherit_properties((*particles)[p_i], particle);
                                 break;
                             }
@@ -400,15 +412,15 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
 
                                     // Splits the particle if it can split
                                     if (particle_amt > 1) {
-                                        remove_indices.push_back(p_i);
+                                        remove_indices->emplace_back(std::move(p_i));
 
                                         area = area / particle_amt;
                                         radius = sqrt(area / pi);
                                         float mass = (*particles)[p_i]->mass / particle_amt;
 
                                         for (int n = 0; n < particle_amt; n++) {
-                                            Particle* new_particle = new Particle(radius, (*particles)[p_i]->particle->getPosition(), (*particles)[p_i]->particle->getFillColor(), (*particles)[p_i]->type, mass, sf::Vector2f((*particles)[p_i]->velocity->x, (*particles)[p_i]->velocity->y), (*particles)[p_i]->temperature, (*particles)[p_i]->viscosity, (*particles)[p_i]->consume, (*particles)[p_i]->explode, (*particles)[p_i]->teleportation, (*particles)[p_i]->swap, (*particles)[p_i]->iridescent, (*particles)[p_i]->radioactive);
-                                            new_particles.push_back(new_particle);
+                                            std::unique_ptr<Particle> new_particle = std::make_unique<Particle>(radius, (*particles)[p_i]->particle->getPosition(), (*particles)[p_i]->particle->getFillColor(), (*particles)[p_i]->type, mass, sf::Vector2f((*particles)[p_i]->velocity->x, (*particles)[p_i]->velocity->y), (*particles)[p_i]->temperature, (*particles)[p_i]->viscosity, (*particles)[p_i]->consume, (*particles)[p_i]->explode, (*particles)[p_i]->teleportation, (*particles)[p_i]->swap, (*particles)[p_i]->iridescent, (*particles)[p_i]->radioactive);
+                                            new_particles->emplace_back(std::move(new_particle));
                                         }
                                     }
                                 }
@@ -433,15 +445,15 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
 
                                     if (particle_amt > 1) {
 
-                                        remove_indices.push_back(index);
+                                        remove_indices->emplace_back(std::move(index));
                                         
                                         area = area / particle_amt;
                                         radius = sqrt(area / pi);
                                         float mass = particle->mass / particle_amt;
 
                                         for (int n = 0; n < particle_amt; n++) {
-                                            Particle* new_particle = new Particle(radius, particle->particle->getPosition(), particle->particle->getFillColor(), particle->type, mass, sf::Vector2f(particle->velocity->x, particle->velocity->y), particle->temperature, particle->viscosity, particle->consume, particle->explode, particle->teleportation, particle->swap, particle->iridescent, particle->radioactive);
-                                            new_particles.push_back(new_particle);
+                                            std::unique_ptr<Particle> new_particle = std::make_unique<Particle>(radius, particle->particle->getPosition(), particle->particle->getFillColor(), particle->type, mass, sf::Vector2f(particle->velocity->x, particle->velocity->y), particle->temperature, particle->viscosity, particle->consume, particle->explode, particle->teleportation, particle->swap, particle->iridescent, particle->radioactive);
+                                            new_particles->emplace_back(std::move(new_particle));
                                         }
 
                                         // If the main particle explodes, we don't want to use the original anymore
@@ -456,7 +468,7 @@ void check_collisions(std::vector<Particle*>* particles, Particle* particle, sf:
         }
     }
 }
-void update_position(Particle* particle, sf::CircleShape* shape, int index, float deltaTime, float gravity, QuadTree* qt) {
+void update_position(std::unique_ptr<Particle>& particle, std::unique_ptr<sf::CircleShape>& shape, int index, float deltaTime, float gravity, std::unique_ptr<QuadTree>& qt) {
 
     // Move particle so far along the given path.
     float x = shape->getPosition().x;
@@ -465,35 +477,30 @@ void update_position(Particle* particle, sf::CircleShape* shape, int index, floa
     particle->velocity->y += deltaTime * gravity * particle->mass;
     shape->setPosition(x + particle->velocity->x * deltaTime, y + particle->velocity->y * deltaTime);
 }
-void space_update_position(std::vector<Particle*> particles, float deltaTime, Barnes_Hut* space_qt, int i) {
+void space_update_position(std::unique_ptr<std::vector<std::unique_ptr<Particle>>>& particles, float deltaTime, std::unique_ptr<Barnes_Hut>& space_qt, int i) {
 
     float x_shift = 0;
     float y_shift = 0;
-    space_qt->calculate_force(i, particles[i], x_shift, y_shift);
+    space_qt->calculate_force(i, particles->operator[](i), x_shift, y_shift);
     std::tuple<float, float> transformation(x_shift, y_shift);
 
-    sf::Vector2f pos = particles[i]->particle->getPosition();
-    float mass = particles[i]->mass;
-    particles[i]->velocity->x += deltaTime * std::get<0>(transformation) / mass;
-    particles[i]->velocity->y += deltaTime * std::get<1>(transformation) / mass;
-    particles[i]->particle->setPosition(pos.x + particles[i]->velocity->x * deltaTime, pos.y + particles[i]->velocity->y * deltaTime);
+    sf::Vector2f pos = particles->operator[](i)->particle->getPosition();
+    float mass = particles->operator[](i)->mass;
+    particles->operator[](i)->velocity->x += deltaTime * std::get<0>(transformation) / mass;
+    particles->operator[](i)->velocity->y += deltaTime * std::get<1>(transformation) / mass;
+    particles->operator[](i)->particle->setPosition(pos.x + particles->operator[](i)->velocity->x * deltaTime, pos.y + particles->operator[](i)->velocity->y * deltaTime);
 }
-void wind_sim(std::vector<Particle*>* particles, int horiztonal_blow, int vertical_blow) {
+void wind_sim(std::unique_ptr<std::vector<std::unique_ptr<Particle>>>& particles, int horiztonal_blow, int vertical_blow) {
     for (auto& particle : (*particles)) {
         particle->velocity->x += float(horiztonal_blow) / 5;
         particle->velocity->y += float(vertical_blow) / 5;
     }
 }
-void update_particles(std::vector<Particle*>* particles, float deltaTime, float gravity, QuadTree* collisions_qt, Barnes_Hut* space_qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves) {
-    
-    // Particles to remove if consumed, destroyed, eaten, chomped, devoured, incinerated, blown up, thrown into the eternal abyss, or banished to the shadow realm
-    std::vector<int> remove_indices;
-    std::vector<Particle*> new_particles;
-    size_t size = particles->size();
+void update_particles(std::unique_ptr<std::vector<std::unique_ptr<Particle>>>& particles, float deltaTime, float gravity, std::unique_ptr<QuadTree>& collisions_qt, std::unique_ptr<Barnes_Hut>& space_qt, std::vector<Line> lines, std::vector<Bezier_Curve> curves, std::unique_ptr<std::vector<int>>& remove_indices, std::unique_ptr<std::vector<std::unique_ptr<Particle>>>& new_particles) {
 
     if (gravity != 0) {
         for (int i = 0; i < particles->size(); i++) {
-            if (!std::count(remove_indices.begin(), remove_indices.end(), i)) {
+            if (std::count(remove_indices->begin(), remove_indices->end(), i) == 0) {
                 update_position((*particles)[i], (*particles)[i]->particle, i, deltaTime, gravity, collisions_qt);
                 check_collisions(particles, (*particles)[i], (*particles)[i]->particle, i, collisions_qt, lines, curves, remove_indices, new_particles);
             }
@@ -501,22 +508,11 @@ void update_particles(std::vector<Particle*>* particles, float deltaTime, float 
     }
     else {
         for (int i = 0; i < particles->size(); i++) {
-            if (!std::count(remove_indices.begin(), remove_indices.end(), i)) {
-                space_update_position((*particles), deltaTime, space_qt, i);
+            if (std::count(remove_indices->begin(), remove_indices->end(), i) == 0) {
+                space_update_position(particles, deltaTime, space_qt, i);
                 check_collisions(particles, (*particles)[i], (*particles)[i]->particle, i, collisions_qt, lines, curves, remove_indices, new_particles);
             }
         }
-    }
-
-    // Collisions are done, remove all the bad particles
-    if (remove_indices.size() > 0) {
-        sort(remove_indices.begin(), remove_indices.end(), std::greater<int>());
-        for (int index : remove_indices) if (index < particles->size()) particles->erase(particles->begin() + index);
-    }
-
-    // Adds all the new particles from explosions
-    if (new_particles.size() > 0) {
-        for (auto& particle : new_particles) particles->push_back(particle);
     }
 }
 sf::Color color_getter(int &r, int &g, int &b, bool &r_dir, bool &g_dir, bool &b_dir) {
@@ -629,7 +625,7 @@ int main()
     ui.create_UI(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature, horizontal_blow, vertical_blow);
     std::vector<std::vector<sf::RectangleShape*>> UI_vectors = ui.vectors;
 
-    std::vector<Particle*>* particles = new std::vector<Particle*>;
+    std::unique_ptr<std::vector<std::unique_ptr<Particle>>> particles = std::make_unique<std::vector<std::unique_ptr<Particle>>>();
     std::vector<sf::Text*> texts = ui.texts;
     std::vector<sf::CircleShape*> preview_particles = ui.preview_particles;
 
@@ -676,7 +672,6 @@ int main()
 
     // SETTING UP THREADS
     std::vector<std::thread>  threads(num_threads);
-    //std::vector<sf::Thread*> sfthreads(num_threads);
     std::vector<std::unique_ptr<sf::Thread>> sfthreads(num_threads);
 
     sf::Vector2i curr_mouse_pos = sf::Mouse::getPosition(*window);
@@ -734,10 +729,7 @@ int main()
                     type);
 
                 // Clears everything from the window
-                if      (eventtype == 27) {
-                    for (int i = 0; i < particles->size(); i++) {
-                        delete (*particles)[i];
-                    }
+                if (eventtype == 27) {
                     particles->clear();
                     lines.clear();
                     curves.clear();
@@ -751,12 +743,12 @@ int main()
                         if (lines.size() == 0) {
                             sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
                             Line new_line(new_vertex, 50);
-                            lines.push_back(new_line);
+                            lines.emplace_back(new_line);
                         }
                         else if (lines.back().drawable) {
                             sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
                             Line new_line(new_vertex, 50);
-                            lines.push_back(new_line);
+                            lines.emplace_back(new_line);
                         }
                         lines.back().add_point(sf::Vector2i(mouse.x, mouse.y));
                     }
@@ -766,12 +758,12 @@ int main()
                         if (curves.size() == 0) {
                             sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
                             Bezier_Curve new_curve(new_vertex, 50);
-                            curves.push_back(new_curve);
+                            curves.emplace_back(new_curve);
                         }
                         else if (curves.back().drawable) {
                             sf::VertexArray* new_vertex = new sf::VertexArray(sf::LineStrip, 50);
                             Bezier_Curve new_curve(new_vertex, 50);
-                            curves.push_back(new_curve);
+                            curves.emplace_back(new_curve);
                         }
                         curves.back().add_point(sf::Vector2i(mouse.x, mouse.y));
                     }
@@ -800,8 +792,8 @@ int main()
                             // Updating the preview incase particles change colors willingly
                             for (auto& preview : preview_particles) preview->setFillColor(sf::Color(red, green, blue));
 
-                            Particle* particle = new Particle(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent, radioactive);
-                            particles->push_back(particle);
+                            std::unique_ptr<Particle> particle = std::make_unique<Particle>(radius, position, color, type, mass, velocity, temperature, viscosity, consume, explode, teleportation, particle_swap, iridescent, radioactive);
+                            particles->emplace_back(std::move(particle));
                         }
                         texts[0]->setString(std::to_string(red));
                         texts[1]->setString(std::to_string(green));
@@ -852,8 +844,8 @@ int main()
             }
             
             // Refactoring QuadTrees
-            QuadTree *collisions_qt = new QuadTree(bounds, 4);
-            Barnes_Hut *space_qt = new Barnes_Hut(bounds, 1);
+            std::unique_ptr<QuadTree> collisions_qt = std::make_unique<QuadTree>(bounds, 4);
+            std::unique_ptr<Barnes_Hut> space_qt = std::make_unique<Barnes_Hut>(bounds, 1);
 
             // Updates particles positions in case they are on the same pixel
             //  This prevents a stack overflow with the space partitioner
@@ -883,15 +875,35 @@ int main()
                 if (gravity == 0) space_qt->insert(point);
             }
 
-            for (int i = 0; i < num_threads; i++) {
+            std::unique_ptr<std::vector<std::unique_ptr<Particle>>> new_particles = std::make_unique<std::vector<std::unique_ptr<Particle>>>();
+            std::unique_ptr<std::vector<int>> remove_indices = std::make_unique<std::vector<int>>();
+            /*for (int i = 0; i < num_threads; i++) {
                 int start_index = i * particles_per_thread;
                 int end_index = (i == num_threads - 1) ? num_particles + (num_particles % num_threads) : start_index + particles_per_thread;
-                threads[i] = std::thread(update_particles, particles, subdt, gravity, collisions_qt, space_qt, lines, curves);
-            }
+                threads[i] = std::thread(update_particles, std::ref(particles), subdt, gravity, std::ref(collisions_qt), std::ref(space_qt), lines, curves, std::ref(remove_indices), std::ref(new_particles));
+            }*/
 
             // Wait for all threads to finish
-            for (auto& thread : threads) {
+            /*for (auto& thread : threads) {
                 thread.join();
+            }*/
+
+            update_particles(std::ref(particles), subdt, gravity, std::ref(collisions_qt), std::ref(space_qt), lines, curves, std::ref(remove_indices), std::ref(new_particles));
+            size_t size = particles->size();
+            
+            // Collisions are done, remove all the bad particles
+            sort(remove_indices->begin(), remove_indices->end(), std::greater<int>());
+            auto last = std::unique(remove_indices->begin(), remove_indices->end());
+            remove_indices->erase(last, remove_indices->end());
+
+            if (remove_indices->size() > 0) {
+                sort(remove_indices->begin(), remove_indices->end(), std::greater<int>());
+                for (int index : (*remove_indices)) particles->erase(particles->begin() + index);
+            }
+ 
+            // Adds in all the new particles from explosions
+            if (new_particles->size() > 0) {
+                for (auto& particle : (*new_particles)) particles->emplace_back(std::move(particle));
             }
 
             // Chances of particles using their abilities
@@ -910,13 +922,13 @@ int main()
                             float random_particle = random_number_generator(std::tuple<int, int>(0, int(particles->size() - 1)));
                             if ((*particles)[random_particle]->swap) {
                                 sf::Vector2f pos1 =  (*particles)[step]->particle->getPosition();
-                                sf::Vector2f* vel1 = (*particles)[step]->velocity;
+                                std::unique_ptr<sf::Vector2f>& vel1 = (*particles)[step]->velocity;
                                 sf::Vector2f pos2 =  (*particles)[random_particle]->particle->getPosition();
-                                sf::Vector2f* vel2 = (*particles)[random_particle]->velocity;
+                                std::unique_ptr<sf::Vector2f>& vel2 = (*particles)[random_particle]->velocity;
                                 (*particles)[step]->particle->setPosition(pos2);
                                 (*particles)[random_particle]->particle->setPosition(pos1);
-                                (*particles)[step]->velocity = vel2;
-                                (*particles)[random_particle]->velocity = vel1;
+                                (*particles)[step]->velocity = std::move(vel2);
+                                (*particles)[random_particle]->velocity = std::move(vel1);
                             }
                         }
                     }
@@ -986,14 +998,6 @@ int main()
                         preview_particles[i]->setRadius(radius);
                         preview_particles[i]->setOrigin(sf::Vector2f(radius, radius));
                     }
-                }
-                // Update explode particle
-                else if (i == 3) {
-
-                }
-                // Update negative particle
-                else if (i == 4) {
-
                 }
                 // Update teleport particle
                 else if (i == 6 || (the_chosen_one == 2 && i == 5)) {
@@ -1066,9 +1070,6 @@ int main()
 
             // Wind Physics
             if (wind_enabled) wind_sim(particles, horizontal_blow, vertical_blow);
-
-            delete collisions_qt;
-            delete space_qt;
         }
 
         // Draws Particles
@@ -1115,6 +1116,9 @@ int main()
 
 /*
 TODO LIST
+Update Particle's Viscosity
+Balls don't teleport :<
+Brother Clements needs to help me live and not die
 
 https://byui.zoom.us/my/robertkumar 4/3/2023 2:00pm
 

@@ -7,13 +7,13 @@
 class Particle {
 public:
 
-	sf::CircleShape* particle;
+	std::unique_ptr<sf::CircleShape> particle;
 	std::string type;
 	float radius;
 	double mass;
 	double vy;
 	float temperature;
-	sf::Vector2f* velocity;
+	std::unique_ptr<sf::Vector2f> velocity;
 	float viscosity;
 	bool consume;
 	bool explode;
@@ -24,13 +24,13 @@ public:
 
 	Particle() = default;
 	Particle(float size, sf::Vector2f position, sf::Color color, std::string particle_type, double particle_mass, sf::Vector2f v, float temp, float visc, bool cons, bool xplod, bool teleport, bool particle_swap, bool iridescence, bool is_radioactive) {
-		particle = new sf::CircleShape(size);
+		particle = std::make_unique<sf::CircleShape>(size);
 		particle->setPosition(position);
 		particle->setOrigin(size, size);
 		particle->setFillColor(color);
 
 		mass = particle_mass;
-		velocity = new sf::Vector2f(v.x, v.y);
+		velocity = std::make_unique<sf::Vector2f>(v.x, v.y);
 		radius = size;
 		type = particle_type;
 		temperature = temp;
@@ -41,10 +41,6 @@ public:
 		swap = particle_swap;
 		iridescent = iridescence;
 		radioactive = is_radioactive;
-	}
-	~Particle() {
-		delete particle;
-		delete velocity;
 	}
 };
 
