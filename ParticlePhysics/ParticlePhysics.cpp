@@ -11,6 +11,7 @@
 #include "QTree.h"
 #include "shapes.h"
 #include <utility>
+#include <mutex>
 
 /*
 
@@ -25,6 +26,7 @@ https://en.wikipedia.org/wiki/B%C3%A9zier_curve
 https://gamedev.stackexchange.com/questions/37802/collision-detection-with-curves#:~:text=You%20can%20actually%20see%20if,closest%20point%20on%20the%20curve.
 https://www.sfml-dev.org/tutorials/2.5/graphics-view.php
 https://cplusplus.com/reference/random/?kw=%3Crandom%3E
+https://cplusplus.com/reference/mutex/lock/
 *****SOURCES*****
 
 */
@@ -236,7 +238,7 @@ void check_collisions(
 
     // Rate at which energy is lost against the wall/floor
     float restitution = .9 - (particle->viscosity/500);
-    float friction = 0.9 + 0.099 * (1.f - particle->viscosity / 500.f);
+    float friction = 0.8 + 0.099 * (1.f - particle->viscosity / 500.f);
 
     float radius = shape->getGlobalBounds().height / 2;
     float particlex = shape->getPosition().x;
@@ -412,7 +414,7 @@ void check_collisions(
 
                                     // Splits the particle if it can split
                                     if (particle_amt > 1) {
-                                        remove_indices->emplace_back(std::move(p_i));
+                                        remove_indices->emplace_back(p_i);
 
                                         area = area / particle_amt;
                                         radius = sqrt(area / pi);
@@ -444,9 +446,8 @@ void check_collisions(
                                     particle_amt = (particle_amt > limit) ? limit : particle_amt;
 
                                     if (particle_amt > 1) {
+                                        remove_indices->emplace_back(index);
 
-                                        remove_indices->emplace_back(std::move(index));
-                                        
                                         area = area / particle_amt;
                                         radius = sqrt(area / pi);
                                         float mass = particle->mass / particle_amt;
@@ -672,7 +673,6 @@ int main()
 
     // SETTING UP THREADS
     std::vector<std::thread>  threads(num_threads);
-    std::vector<std::unique_ptr<sf::Thread>> sfthreads(num_threads);
 
     sf::Vector2i curr_mouse_pos = sf::Mouse::getPosition(*window);
     while (window->isOpen())
@@ -681,11 +681,9 @@ int main()
         sf::Event event;
         while (window->pollEvent(event)) 
         {
-            if (event.type == sf::Event::KeyPressed)
-            {
-                if (event.key.code == sf::Keyboard::Escape) {
-                    window->close();
-                }
+            if (event.type == sf::Event::Closed) {
+                window->close();
+                return 0;
             }
             if (!sf::Mouse::isButtonPressed(sf::Mouse::Left) && event.type == sf::Event::MouseMoved && move_window) {
                 // Update Mouse Position
@@ -877,16 +875,16 @@ int main()
 
             std::unique_ptr<std::vector<std::unique_ptr<Particle>>> new_particles = std::make_unique<std::vector<std::unique_ptr<Particle>>>();
             std::unique_ptr<std::vector<int>> remove_indices = std::make_unique<std::vector<int>>();
-            /*for (int i = 0; i < num_threads; i++) {
-                int start_index = i * particles_per_thread;
-                int end_index = (i == num_threads - 1) ? num_particles + (num_particles % num_threads) : start_index + particles_per_thread;
-                threads[i] = std::thread(update_particles, std::ref(particles), subdt, gravity, std::ref(collisions_qt), std::ref(space_qt), lines, curves, std::ref(remove_indices), std::ref(new_particles));
-            }*/
+            //for (int i = 0; i < num_threads; i++) {
+                //int start_index = i * particles_per_thread;
+                //int end_index = (i == num_threads - 1) ? num_particles + (num_particles % num_threads) : start_index + particles_per_thread;
+                //threads[i] = std::thread(update_particles, std::ref(particles), subdt, gravity, std::ref(collisions_qt), std::ref(space_qt), lines, curves, std::ref(remove_indices), std::ref(new_particles));
+            //}
 
             // Wait for all threads to finish
-            /*for (auto& thread : threads) {
-                thread.join();
-            }*/
+            //for (auto& thread : threads) {
+                //thread.join();
+            //}
 
             update_particles(std::ref(particles), subdt, gravity, std::ref(collisions_qt), std::ref(space_qt), lines, curves, std::ref(remove_indices), std::ref(new_particles));
             size_t size = particles->size();
@@ -1118,8 +1116,7 @@ int main()
 
 /*
 TODO LIST
-Update Particle's Viscosity
-Balls don't teleport :<
+Particles don't explode on the floor
 Brother Clements needs to help me live and not die
 
 https://byui.zoom.us/my/robertkumar 4/3/2023 2:00pm

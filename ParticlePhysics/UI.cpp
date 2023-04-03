@@ -194,6 +194,8 @@ void UserInterface::check_collision(std::string& UI_render_type, int& eventtype,
                 else if (i == 14) {
                     if (j == 0) { viscosity -= modifier; }
                     if (j == 2) { viscosity += modifier; }
+                    if (viscosity < 0) viscosity = 0;
+                    else if (viscosity > 400) viscosity = 400;
                     texts[13]->setString(std::to_string(viscosity));
                 }
                 else if (i == 15) {

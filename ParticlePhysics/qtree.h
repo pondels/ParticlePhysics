@@ -55,10 +55,10 @@ public:
 	bool subdivided = false;
 
 	// Children containing more particles
-	QuadTree* northWest;
-	QuadTree* northEast;
-	QuadTree* southWest;
-	QuadTree* southEast;
+	std::unique_ptr<QuadTree> northWest;
+	std::unique_ptr<QuadTree> northEast;
+	std::unique_ptr<QuadTree> southWest;
+	std::unique_ptr<QuadTree> southEast;
 
 	// Constructor
 	QuadTree() = default;
@@ -69,10 +69,6 @@ public:
 
 	~QuadTree() {
 		delete points;
-		delete northWest;
-		delete northEast;
-		delete southWest;
-		delete southEast;
 	}
 
 	bool insert(Point point) {
@@ -104,10 +100,10 @@ public:
 		RectangleBB NW(sf::Vector2f(x - w / 2, y - h / 2), w / 2, h / 2);
 		RectangleBB SE(sf::Vector2f(x + w / 2, y + h / 2), w / 2, h / 2);
 		RectangleBB SW(sf::Vector2f(x - w / 2, y + h / 2), w / 2, h / 2);
-		northWest = new QuadTree(NW, capacity);
-		northEast = new QuadTree(NE, capacity);
-		southWest = new QuadTree(SW, capacity);
-		southEast = new QuadTree(SE, capacity);
+		northWest = std::make_unique<QuadTree>(NW, capacity);
+		northEast = std::make_unique<QuadTree>(NE, capacity);
+		southWest = std::make_unique<QuadTree>(SW, capacity);
+		southEast = std::make_unique<QuadTree>(SE, capacity);
 		subdivided = true;
 	}
 
@@ -139,10 +135,10 @@ protected:
 	const float THETA = 0.01f;
 
 	// Children containing more particles
-	Barnes_Hut* northWestBarnes;
-	Barnes_Hut* northEastBarnes;
-	Barnes_Hut* southWestBarnes;
-	Barnes_Hut* southEastBarnes;
+	std::unique_ptr<Barnes_Hut> northWestBarnes;
+	std::unique_ptr<Barnes_Hut> northEastBarnes;
+	std::unique_ptr<Barnes_Hut> southWestBarnes;
+	std::unique_ptr<Barnes_Hut> southEastBarnes;
 
 public:
 	float x_sum = 0;
@@ -154,12 +150,6 @@ public:
 	Barnes_Hut(RectangleBB bounds, int cap) {
 		boundary = bounds;
 		capacity = cap;
-	}
-	~Barnes_Hut() {
-		delete northEastBarnes;
-		delete northWestBarnes;
-		delete southEastBarnes;
-		delete southWestBarnes;
 	}
 	void update_com(Point point) {
 		x_sum += point.x * point.mass;
@@ -178,10 +168,10 @@ public:
 		RectangleBB NW(sf::Vector2f(x - w / 2, y - h / 2), w / 2, h / 2);
 		RectangleBB SE(sf::Vector2f(x + w / 2, y + h / 2), w / 2, h / 2);
 		RectangleBB SW(sf::Vector2f(x - w / 2, y + h / 2), w / 2, h / 2);
-		northWestBarnes = new Barnes_Hut(NW, capacity);
-		northEastBarnes = new Barnes_Hut(NE, capacity);
-		southWestBarnes = new Barnes_Hut(SW, capacity);
-		southEastBarnes = new Barnes_Hut(SE, capacity);
+		northWestBarnes = std::make_unique<Barnes_Hut>(NW, capacity);
+		northEastBarnes = std::make_unique<Barnes_Hut>(NE, capacity);
+		southWestBarnes = std::make_unique<Barnes_Hut>(SW, capacity);
+		southEastBarnes = std::make_unique<Barnes_Hut>(SE, capacity);
 		subdivided = true;
 	}
 	void insert_recur(Point point) {
