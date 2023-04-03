@@ -657,9 +657,9 @@ int main()
     sf::Texture wind_texture;
     sf::Texture clear_texture;
     sf::Texture mouse_texture;
-    if (!wind_texture.loadFromFile("C:\\Users\\yeckr\\OneDrive\\Desktop\\Art Folder\\LIKETHEWIND.png")) {}
-    if (!clear_texture.loadFromFile("C:\\Users\\yeckr\\OneDrive\\Desktop\\Art Folder\\LIKETHECLEAR.png")) {}
-    if (!mouse_texture.loadFromFile("C:\\Users\\yeckr\\OneDrive\\Desktop\\Art Folder\\mouse.png")) {}
+    if (!wind_texture.loadFromFile("./LIKETHEWIND.png")) {}
+    if (!clear_texture.loadFromFile("./LIKETHECLEAR.png")) {}
+    if (!mouse_texture.loadFromFile("./mouse.png")) {}
     sf::Sprite wind_sprite(wind_texture);
     sf::Sprite clear_sprite(clear_texture);
     sf::Sprite mouse_sprite(mouse_texture);

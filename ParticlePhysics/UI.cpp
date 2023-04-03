@@ -3,7 +3,7 @@
 
 UserInterface::UserInterface(sf::Vector2f ws) {
     windowsize = ws;
-    if (!font.loadFromFile("C:\\WINDOWS\\FONTS\\ARIAL.TTF")) {}
+    if (!font.loadFromFile("./arial.ttf")) {}
 }
 bool mouse_collide(sf::Vector2i mouse, sf::Vector2f position, sf::Vector2f size) {
     if (mouse.x > position.x && mouse.x < position.x + size.x && mouse.y > position.y && mouse.y < position.y + size.y) return true;
