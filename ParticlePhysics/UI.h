@@ -20,12 +20,12 @@ public:
 	sf::RectangleShape* make_bar(sf::Vector2f, sf::Color, sf::Vector2f);
 	void move_UI(sf::Vector2i);
 	void check_collision(std::string&, int&, sf::Vector2i, int&, int&, int&, int&, int&,
-		int&, int&, int&, int&, int&, bool&, float&, int&, int&, float&, bool&, bool&, bool&,
+		int&, int&, int&, int&, int&, bool&, int&, int&, int&, float&, bool&, bool&, bool&,
 		bool&, bool&, bool&, bool&, bool&, bool&, bool&, bool&,
 		std::string&);
-	void create_UI(int, int, int, int, int, int, int, int, int, float, int, float, float);
+	void create_UI(int, int, int, int, int, int, int, int, int, float, int, float, float, int);
 	void PictureDisplay();
-	void TextDisplay(int, int, int, int, int, int, int, int, int, float, int, int, int);
+	void TextDisplay(int, int, int, int, int, int, int, int, int, float, int, int, int, int);
 };
 
 #endif

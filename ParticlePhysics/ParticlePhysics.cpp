@@ -588,7 +588,7 @@ int main()
     int blue = 0;
     int temperature = 15;
     bool rainbow_mode = false;
-    float viscosity = 70;
+    int viscosity = 70;
     bool consume = false;
     bool explode = false;
     bool teleportation = false;
@@ -622,7 +622,7 @@ int main()
 
     std::string UI_render_type = "closed";
     UserInterface ui(windowsize);
-    ui.create_UI(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature, horizontal_blow, vertical_blow);
+    ui.create_UI(start_vel_x, start_vel_y, mass, radius, modifier, particle_amount, red, green, blue, gravity, temperature, horizontal_blow, vertical_blow, viscosity);
     std::vector<std::vector<sf::RectangleShape*>> UI_vectors = ui.vectors;
 
     std::unique_ptr<std::vector<std::unique_ptr<Particle>>> particles = std::make_unique<std::vector<std::unique_ptr<Particle>>>();
@@ -729,7 +729,7 @@ int main()
                     type);
 
                 // Clears everything from the window
-                if (eventtype == 27) {
+                if (eventtype == 28) {
                     particles->clear();
                     lines.clear();
                     curves.clear();
