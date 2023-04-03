@@ -7,4 +7,4 @@ What happens when you ball has negative mass? What happens if you explode a part
 
 That's all there is to say without giving away the first-time experience! The executable is linked [here!](https://drive.google.com/uc?export=download&id=16L2aLDIgPRsO09yo8Ftjl1R_OYPdfRc_)
 
-https://drive.google.com/drive/u/2/folders/16L2aLDIgPRsO09yo8Ftjl1R_OYPdfRc_
+https://drive.google.com/drive/folders/16L2aLDIgPRsO09yo8Ftjl1R_OYPdfRc_?usp=sharing
